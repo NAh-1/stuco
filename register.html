@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Registration | STUCO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --navy: #07112b;
+      --gold: #f2b705;
+      --cream: #faf8f2;
+      --white: #ffffff;
+      --gray-text: #6b6860;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--navy); }
+    .page-header { padding: 40px 5vw 0; }
+    .page-header h1 { font-size: clamp(32px, 5vw, 48px); margin-bottom: 12px; }
+    .page-header p { color: var(--gray-text); max-width: 720px; line-height: 1.7; }
+    .form-wrapper { max-width: 800px; margin: 0 auto; padding: 40px 5vw 80px; }
+    .event-card { background: var(--white); border-radius: 18px; padding: 32px; box-shadow: 0 24px 60px rgba(7,17,43,0.08); margin-bottom: 24px; }
+    .event-card h2 { font-size: 28px; margin-bottom: 8px; }
+    .event-card p { color: var(--gray-text); line-height: 1.7; }
+    .event-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-top: 20px; }
+    .meta-item { background: #f8f7f4; border-radius: 12px; padding: 16px; font-size: 13px; color: var(--gray-text); }
+    .form-card { background: var(--white); border-radius: 18px; padding: 32px; border: 1px solid rgba(0,0,0,0.06); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+    .form-row.full { grid-template-columns: 1fr; }
+    .form-group label { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--navy); margin-bottom: 8px; letter-spacing: 1px; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 14px 16px; border: 1.5px solid rgba(0,0,0,0.1); border-radius: 10px; font-size: 15px; color: var(--navy); background: #f7f5ef; }
+    .form-group textarea { min-height: 120px; resize: vertical; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--gold); background: #fff; }
+    .submit-btn { width: 100%; background: var(--navy); color: var(--gold); border: none; border-radius: 10px; padding: 16px; font-size: 15px; font-weight: 700; cursor: pointer; transition: transform 0.2s, background 0.2s; }
+    .submit-btn:hover { background: #0e1e47; transform: translateY(-1px); }
+    .notice { margin-top: 18px; color: var(--gray-text); font-size: 14px; }
+    .feedback { padding: 16px; border-radius: 12px; margin-bottom: 18px; display: none; }
+    .feedback.success { background: #eaf7eb; color: #21703a; }
+    .feedback.error { background: #fce8e6; color: #9f2a26; }
+    .loading { color: var(--gray-text); margin-top: 20px; }
+    @media (max-width: 700px) { .form-row { grid-template-columns: 1fr; } .event-meta { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <div class="form-wrapper">
+      <p class="section-tag">Register</p>
+      <h1>Secure your spot</h1>
+      <p id="eventIntro">Please complete the registration below to join this event. You can always return to the Student Council homepage if you need more details.</p>
+    </div>
+  </div>
+
+  <div class="form-wrapper">
+    <div id="eventCard" class="event-card">
+      <div class="loading">Loading event details...</div>
+    </div>
+
+    <div class="form-card">
+      <div id="feedback" class="feedback"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>First Name</label>
+          <input type="text" id="firstName" placeholder="Jane">
+        </div>
+        <div class="form-group">
+          <label>Last Name</label>
+          <input type="text" id="lastName" placeholder="Smith">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Grade</label>
+          <select id="grade">
+            <option value="">Select your grade</option>
+            <option>Grade 9</option>
+            <option>Grade 10</option>
+            <option>Grade 11</option>
+            <option>Grade 12</option>
+            <option>Faculty / Staff</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="email" placeholder="jane.smith@shantiniketanschool.edu">
+        </div>
+      </div>
+      <div id="dynamicFields"></div>
+      <button class="submit-btn" id="submitBtn" onclick="submitRegistration()">Submit Registration</button>
+      <p class="notice">This link is unique to the selected event and will save your registration directly to the event record.</p>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const eventId = urlParams.get('event_id');
+    const eventCard = document.getElementById('eventCard');
+    const feedback = document.getElementById('feedback');
+    const submitBtn = document.getElementById('submitBtn');
+
+    async function loadEvent() {
+      if (!eventId) {
+        eventCard.innerHTML = '<p class="loading">No event selected. Use a unique registration link from the event listing.</p>';
+        submitBtn.disabled = true;
+        return;
+      }
+
+      try {
+        const { data, error } = await client
+          .from('events')
+          .select('*')
+          .eq('id', eventId)
+          .single();
+
+        if (error || !data) {
+          eventCard.innerHTML = '<p class="loading">Event not found. Please verify the registration link.</p>';
+          submitBtn.disabled = true;
+          return;
+        }
+
+        eventCard.innerHTML = `
+          <h2>${data.title}</h2>
+          <p>${data.description}</p>
+          <div class="event-meta">
+            <div class="meta-item"><strong>Date</strong><br>${data.event_date}</div>
+            <div class="meta-item"><strong>Time</strong><br>${data.start_time} – ${data.end_time}</div>
+            <div class="meta-item"><strong>Location</strong><br>${data.location}</div>
+          </div>
+        `;
+        await loadRegistrationFields();
+      } catch (error) {
+        eventCard.innerHTML = '<p class="loading">Could not load event. Try again later.</p>';
+        submitBtn.disabled = true;
+      }
+    }
+
+    async function loadRegistrationFields() {
+      document.getElementById('dynamicFields').innerHTML = '';
+      if (!eventId) return;
+
+      try {
+        const { data, error } = await client
+          .from('registration_form_fields')
+          .select('*')
+          .eq('event_id', eventId)
+          .order('sort_order', { ascending: true });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          return;
+        }
+
+        let html = '';
+        data.forEach(field => {
+          const optionsHtml = field.options
+            ? field.options.split(',').map(opt => opt.trim()).filter(Boolean)
+              .map(opt => `<option value="${opt}">${opt}</option>`).join('')
+            : '';
+
+          if (field.type === 'short_text') {
+            html += `
+              <div class="form-group" data-field-id="${field.id}" data-field-type="${field.type}" data-field-name="${field.label}" data-required="${field.required}">
+                <label>${field.label}${field.required ? ' *' : ''}</label>
+                <input type="text" id="field_${field.id}" placeholder="${field.label}">
+              </div>
+            `;
+          } else if (field.type === 'paragraph') {
+            html += `
+              <div class="form-group" data-field-id="${field.id}" data-field-type="${field.type}" data-field-name="${field.label}" data-required="${field.required}">
+                <label>${field.label}${field.required ? ' *' : ''}</label>
+                <textarea id="field_${field.id}" placeholder="${field.label}"></textarea>
+              </div>
+            `;
+          } else if (field.type === 'dropdown') {
+            html += `
+              <div class="form-group" data-field-id="${field.id}" data-field-type="${field.type}" data-field-name="${field.label}" data-required="${field.required}">
+                <label>${field.label}${field.required ? ' *' : ''}</label>
+                <select id="field_${field.id}">
+                  <option value="">Select...</option>
+                  ${optionsHtml}
+                </select>
+              </div>
+            `;
+          } else if (field.type === 'multiple_choice') {
+            html += `
+              <div class="form-group" data-field-id="${field.id}" data-field-type="${field.type}" data-field-name="${field.label}" data-required="${field.required}">
+                <label>${field.label}${field.required ? ' *' : ''}</label>
+                ${field.options.split(',').map(opt => opt.trim()).filter(Boolean).map(opt => {
+                  if (opt.toLowerCase().includes('other')) {
+                    return `<label style="display:block; margin-top:8px;"><input type="radio" name="field_${field.id}" value="${opt}"> ${opt}</label>
+                           <input type="text" id="other_${field.id}" placeholder="Please specify" style="margin-left:20px;margin-top:4px;width:100%;max-width:300px;padding:8px;border:1px solid #ccc;border-radius:4px;">`;
+                  }
+                  return `<label style="display:block; margin-top:8px;"><input type="radio" name="field_${field.id}" value="${opt}"> ${opt}</label>`;
+                }).join('')}
+              </div>
+            `;
+          } else if (field.type === 'checkbox') {
+            html += `
+              <div class="form-group" data-field-id="${field.id}" data-field-type="${field.type}" data-field-name="${field.label}" data-required="${field.required}">
+                <label>${field.label}${field.required ? ' *' : ''}</label>
+                ${field.options.split(',').map(opt => opt.trim()).filter(Boolean).map(opt => {
+                  if (opt.toLowerCase().includes('other')) {
+                    return `<label style="display:block; margin-top:8px;"><input type="checkbox" name="field_${field.id}" value="${opt}"> ${opt}</label>
+                           <input type="text" id="other_${field.id}" placeholder="Please specify" style="margin-left:20px;margin-top:4px;width:100%;max-width:300px;padding:8px;border:1px solid #ccc;border-radius:4px;">`;
+                  }
+                  return `<label style="display:block; margin-top:8px;"><input type="checkbox" name="field_${field.id}" value="${opt}"> ${opt}</label>`;
+                }).join('')}
+              </div>
+            `;
+          }
+        });
+
+        document.getElementById('dynamicFields').innerHTML = html;
+
+        // Set up event listeners for "other" inputs
+        document.querySelectorAll('#dynamicFields [data-field-id]').forEach(node => {
+          const fieldId = node.dataset.fieldId;
+          const fieldType = node.dataset.fieldType;
+          const otherInput = document.getElementById(`other_${fieldId}`);
+          if (otherInput) {
+            otherInput.style.display = 'none'; // Hide by default
+
+            if (fieldType === 'multiple_choice') {
+              const radios = document.querySelectorAll(`input[name="field_${fieldId}"]`);
+              radios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                  otherInput.style.display = this.value.toLowerCase().includes('other') && this.checked ? 'block' : 'none';
+                });
+              });
+            } else if (fieldType === 'checkbox') {
+              const checkboxes = document.querySelectorAll(`input[name="field_${fieldId}"]`);
+              checkboxes.forEach(checkbox => {
+                if (checkbox.value.toLowerCase().includes('other')) {
+                  checkbox.addEventListener('change', function() {
+                    otherInput.style.display = this.checked ? 'block' : 'none';
+                  });
+                }
+              });
+            }
+          }
+        });
+      } catch (error) {
+        if (error.code === 'PGRST205' || error.message?.includes('Could not find the table')) {
+          document.getElementById('dynamicFields').innerHTML = '<div class="empty-state"><p>The registration form schema is missing in Supabase. Please set up the registration_form_fields table.</p></div>';
+          return;
+        }
+        console.error('Error loading registration fields:', error);
+      }
+    }
+
+    async function submitRegistration() {
+      feedback.style.display = 'none';
+      const firstName = document.getElementById('firstName').value.trim();
+      const lastName = document.getElementById('lastName').value.trim();
+      const grade = document.getElementById('grade').value;
+      const email = document.getElementById('email').value.trim();
+      const dynamicNodes = document.querySelectorAll('#dynamicFields [data-field-id]');
+      const responses = {};
+      let missingDynamic = false;
+
+      dynamicNodes.forEach(node => {
+        const fieldId = node.dataset.fieldId;
+        const fieldType = node.dataset.fieldType;
+        const fieldName = node.dataset.fieldName;
+        const fieldRequired = node.dataset.required === 'true';
+        let value = '';
+
+        if (fieldType === 'checkbox') {
+          const checkboxes = document.querySelectorAll(`input[name="field_${fieldId}"]:checked`);
+          const values = Array.from(checkboxes).map(cb => {
+            if (cb.value.toLowerCase().includes('other')) {
+              const otherInput = document.getElementById(`other_${fieldId}`);
+              return otherInput && otherInput.value.trim() ? `${cb.value}: ${otherInput.value.trim()}` : cb.value;
+            }
+            return cb.value;
+          });
+          value = values.join(', ');
+        } else if (fieldType === 'multiple_choice') {
+          const selected = document.querySelector(`input[name="field_${fieldId}"]:checked`);
+          if (selected) {
+            if (selected.value.toLowerCase().includes('other')) {
+              const otherInput = document.getElementById(`other_${fieldId}`);
+              value = otherInput && otherInput.value.trim() ? `${selected.value}: ${otherInput.value.trim()}` : selected.value;
+            } else {
+              value = selected.value;
+            }
+          }
+        } else {
+          const input = document.getElementById(`field_${fieldId}`);
+          value = input ? input.value.trim() : '';
+        }
+
+        if (fieldRequired && !value) {
+          missingDynamic = true;
+        }
+
+        responses[fieldName] = value;
+      });
+
+      if (!eventId || !firstName || !lastName || !grade || !email || missingDynamic) {
+        feedback.className = 'feedback error';
+        feedback.textContent = 'Please complete all required fields.';
+        feedback.style.display = 'block';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+
+      try {
+        const { error } = await client.from('event_registrations').insert([{
+          event_id: parseInt(eventId, 10),
+          first_name: firstName,
+          last_name: lastName,
+          email: email,
+          grade: grade,
+          responses: responses
+        }]);
+
+        if (error) throw error;
+
+        feedback.className = 'feedback success';
+        feedback.textContent = 'Registration submitted! We will reach out soon.';
+        feedback.style.display = 'block';
+        document.getElementById('firstName').value = '';
+        document.getElementById('lastName').value = '';
+        document.getElementById('grade').value = '';
+        document.getElementById('email').value = '';
+      } catch (error) {
+        feedback.className = 'feedback error';
+        feedback.textContent = 'Unable to submit registration. Please try again.';
+        feedback.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Registration';
+      }
+    }
+
+    loadEvent();
+  </script>
+</body>
+</html>
