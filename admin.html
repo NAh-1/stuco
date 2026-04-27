@@ -542,6 +542,17 @@
       margin-bottom: 16px;
     }
 
+    .response-count {
+      background: var(--gold-light);
+      color: var(--navy);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 16px;
+      display: inline-block;
+    }
+
     @media (max-width: 768px) {
       .sidebar {
         width: 200px;
@@ -696,8 +707,28 @@
     <!-- SURVEY SECTION -->
     <section class="content-section" id="survey">
       <div class="header">
-        <h2>Survey Responses</h2>
+        <h2>Surveys</h2>
+        <button class="add-btn" onclick="openSurveyBuilder()">+ Create Survey</button>
       </div>
+      
+      <div id="surveyManagement">
+        <div class="card">
+          <div class="card-content">
+            <h3>Active Survey</h3>
+            <p id="activeSurveyInfo">No active survey</p>
+            <div id="surveyLinkContainer" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(0,0,0,0.1); display: none;">
+              <strong style="display: block; margin-bottom: 8px; color: var(--navy); font-size: 12px;">Share Survey Link:</strong>
+              <div style="display: flex; gap: 8px;">
+                <input type="text" id="surveyLinkInput" readonly style="flex: 1; padding: 12px 16px; border: 1.5px solid rgba(0,0,0,0.1); border-radius: 6px; font-size: 13px; background: #f9f9f9;">
+                <button class="btn-sm btn-primary" onclick="copySurveyLink()" style="padding: 12px 20px;">Copy Link</button>
+              </div>
+            </div>
+          </div>
+          <div class="card-actions" id="activeSurveyActions"></div>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 32px; margin-bottom: 16px;">Survey Responses</h3>
       <div id="surveyList"></div>
     </section>
 
@@ -1887,31 +1918,74 @@
 
   async function loadSurvey() {
     try {
-      const { data, error } = await client
+      // Load active survey
+      const { data: activeSurvey, error: activeSurveyError } = await client
+        .from('surveys')
+        .select('*')
+        .eq('active', true)
+        .single();
+
+      if (activeSurvey) {
+        let questions = activeSurvey.questions;
+        if (typeof questions === 'string') {
+          questions = JSON.parse(questions);
+        }
+
+        const questionCount = questions.length;
+        document.getElementById('activeSurveyInfo').innerHTML = `
+          <strong>${activeSurvey.title || 'Untitled Survey'}</strong><br>
+          <small>${questionCount} question${questionCount !== 1 ? 's' : ''}</small>
+        `;
+        
+        // Show survey link
+        const base = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+        const surveyLink = `${base}survey.html?survey_id=${activeSurvey.id}`;
+        document.getElementById('surveyLinkInput').value = surveyLink;
+        document.getElementById('surveyLinkContainer').style.display = 'block';
+        
+        document.getElementById('activeSurveyActions').innerHTML = `
+          <button class="btn-sm btn-edit" onclick="editSurvey(${activeSurvey.id})">Edit</button>
+          <button class="btn-sm btn-edit" onclick="deactivateSurvey(${activeSurvey.id})">Deactivate</button>
+          <button class="btn-sm btn-primary" onclick="makeMainSurvey(${activeSurvey.id})">Make Main Survey</button>
+          <button class="btn-sm btn-delete" onclick="deleteSurveyById(${activeSurvey.id})">Delete</button>
+        `;
+      } else {
+        document.getElementById('activeSurveyInfo').textContent = 'No active survey';
+        document.getElementById('activeSurveyActions').innerHTML = '';
+        document.getElementById('surveyLinkContainer').style.display = 'none';
+        document.getElementById('surveyList').innerHTML = '<div class="empty-state"><p>No active survey. Activate a survey to see responses here.</p></div>';
+        return;
+      }
+
+      // Load responses for the active survey only
+      const { data: responses, error: responseError } = await client
         .from('survey_responses')
         .select('*')
-        .order('created_at', { ascending: false });
+        .eq('survey_id', activeSurvey.id)
+        .order('submitted_at', { ascending: false });
 
-      if (error) throw error;
+      if (responseError) throw responseError;
 
       let html = '';
-      if (data && data.length > 0) {
-        data.forEach(survey => {
+      if (responses && responses.length > 0) {
+        html += `<div class="response-count">Showing ${responses.length} response${responses.length !== 1 ? 's' : ''} for this survey</div>`;
+        responses.forEach(response => {
+          const responseText = response.responses ? Object.entries(response.responses).map(([q, a]) => `<div style="font-size:12px; margin-top:6px;"><strong>${q}:</strong> ${a || '—'}</div>`).join('') : '';
           html += `
             <div class="card">
               <div class="card-content">
-                <h3>${survey.student_name || 'Anonymous'}</h3>
-                <p>${survey.response.substring(0, 100)}...</p>
-                <small>Grade: ${survey.grade} | Email: ${survey.email}</small>
+                <h3>Survey Response #${response.id}</h3>
+                <small>${new Date(response.submitted_at).toLocaleString()}</small>
+                ${responseText}
               </div>
               <div class="card-actions">
-                <button class="btn-sm btn-delete" onclick="deleteSurvey(${survey.id})">Delete</button>
+                <button class="btn-sm btn-delete" onclick="deleteSurveyResponse(${response.id})">Delete</button>
               </div>
             </div>
           `;
         });
       } else {
-        html = '<div class="empty-state"><p>No survey responses yet</p></div>';
+        html = '<div class="empty-state"><p>No survey responses yet for this survey</p></div>';
       }
       document.getElementById('surveyList').innerHTML = html;
     } catch (error) {
@@ -1919,15 +1993,282 @@
     }
   }
 
-  async function deleteSurvey(id) {
-    if (confirm('Delete this response?')) {
+  function copySurveyLink() {
+    const link = document.getElementById('surveyLinkInput').value;
+    navigator.clipboard.writeText(link).then(() => {
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => {
+        btn.textContent = originalText;
+      }, 2000);
+    }).catch(() => {
+      alert('Could not copy. Please copy manually: ' + link);
+    });
+  }
+
+  async function makeMainSurvey(surveyId) {
+    try {
+      // Deactivate any existing main survey and activate the selected survey
+      await client.from('surveys').update({ main: false, active: false }).neq('id', surveyId);
+      
+      const { error } = await client
+        .from('surveys')
+        .update({ main: true, active: true })
+        .eq('id', surveyId);
+      
+      if (error) throw error;
+      
+      alert('Survey set as main survey and activated successfully!');
+      loadSurvey(); // Refresh the survey list
+    } catch (error) {
+      console.error('Error setting main survey:', error);
+      alert('Error setting main survey: ' + error.message);
+    }
+  }
+
+  function openSurveyBuilder() {
+    currentEdit = null;
+    document.getElementById('modalTitle').textContent = 'Create New Survey';
+    
+    const defaultQuestions = [
+      { question: 'What aspects of school do you enjoy most?', type: 'checkbox', options: ['Events', 'Classes', 'Clubs', 'Sports', 'Other'], required: true },
+      { question: 'How satisfied are you with school events?', type: 'radio', options: ['Very Satisfied', 'Satisfied', 'Neutral', 'Dissatisfied'], required: true },
+      { question: 'What can we improve?', type: 'textarea', required: false }
+    ];
+
+    document.getElementById('modalBody').innerHTML = `
+      <div class="form-group">
+        <label>Survey Title</label>
+        <input type="text" id="surveyTitle" placeholder="e.g., School Experience Feedback">
+      </div>
+      <div id="questionsBuilder"></div>
+      <button class="btn-secondary" onclick="addSurveyQuestion()" style="margin-top: 16px; padding: 10px 16px; width: auto;">+ Add Question</button>
+      <button class="btn-save" onclick="saveSurvey()">Create Survey</button>
+    `;
+    
+    // Initialize with default questions
+    const builder = document.getElementById('questionsBuilder');
+    builder.innerHTML = '';
+    defaultQuestions.forEach((q, idx) => {
+      renderSurveyQuestion(idx, q, builder);
+    });
+    
+    document.getElementById('modal').classList.add('active');
+  }
+
+  function renderSurveyQuestion(idx, question, container) {
+    const questionDiv = document.createElement('div');
+    questionDiv.id = `question-${idx}`;
+    questionDiv.style.cssText = 'background: #f9f9f9; padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid rgba(0,0,0,0.05);';
+    
+    let typeOptions = `
+      <option value="text">Short Text</option>
+      <option value="textarea">Long Text</option>
+      <option value="radio">Multiple Choice</option>
+      <option value="checkbox">Checkboxes</option>
+    `;
+    
+    let optionsHtml = '';
+    if (question.type === 'radio' || question.type === 'checkbox') {
+      optionsHtml = `
+        <label style="margin-top: 10px;">Options (comma-separated)</label>
+        <input type="text" value="${question.options.join(', ')}" onchange="updateSurveyQuestionOptions(${idx}, this.value)" style="width: 100%; padding: 8px; border: 1px solid rgba(0,0,0,0.1); border-radius: 4px; font-size: 13px;">
+      `;
+    }
+    
+    questionDiv.innerHTML = `
+      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <input type="text" value="${question.question}" placeholder="Question text" onchange="updateSurveyQuestion(${idx}, this.value)" style="flex: 1; padding: 8px; border: 1px solid rgba(0,0,0,0.1); border-radius: 4px; font-size: 13px;">
+        <button type="button" onclick="removeSurveyQuestion(${idx})" style="padding: 6px 12px; background: var(--red-accent); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Remove</button>
+      </div>
+      <label style="font-size: 12px;">Type</label>
+      <select onchange="changeSurveyQuestionType(${idx}, this.value)" style="width: 100%; padding: 8px; border: 1px solid rgba(0,0,0,0.1); border-radius: 4px; font-size: 13px; margin-bottom: 10px;">
+        ${typeOptions}
+      </select>
+      ${optionsHtml}
+      <label style="margin-top: 10px; display: flex; gap: 8px; align-items: center;">
+        <input type="checkbox" ${question.required ? 'checked' : ''} onchange="updateSurveyQuestionRequired(${idx}, this.checked)">
+        <span style="font-size: 13px;">Required</span>
+      </label>
+    `;
+    
+    // Set selected type
+    questionDiv.querySelector('select').value = question.type;
+    
+    container.appendChild(questionDiv);
+  }
+
+  let surveyQuestions = [
+    { question: 'What aspects of school do you enjoy most?', type: 'checkbox', options: ['Events', 'Classes', 'Clubs', 'Sports', 'Other'], required: true },
+    { question: 'How satisfied are you with school events?', type: 'radio', options: ['Very Satisfied', 'Satisfied', 'Neutral', 'Dissatisfied'], required: true },
+    { question: 'What can we improve?', type: 'textarea', required: false }
+  ];
+
+  function updateSurveyQuestion(idx, value) {
+    surveyQuestions[idx].question = value;
+  }
+
+  function updateSurveyQuestionType(idx, type) {
+    surveyQuestions[idx].type = type;
+  }
+
+  function updateSurveyQuestionOptions(idx, value) {
+    surveyQuestions[idx].options = value.split(',').map(o => o.trim()).filter(o => o);
+  }
+
+  function updateSurveyQuestionRequired(idx, required) {
+    surveyQuestions[idx].required = required;
+  }
+
+  function changeSurveyQuestionType(idx, type) {
+    surveyQuestions[idx].type = type;
+    const container = document.getElementById('questionsBuilder');
+    container.innerHTML = '';
+    surveyQuestions.forEach((q, i) => renderSurveyQuestion(i, q, container));
+  }
+
+  function addSurveyQuestion() {
+    surveyQuestions.push({ question: 'New Question', type: 'text', options: [], required: false });
+    const container = document.getElementById('questionsBuilder');
+    container.innerHTML = '';
+    surveyQuestions.forEach((q, i) => renderSurveyQuestion(i, q, container));
+  }
+
+  function removeSurveyQuestion(idx) {
+    surveyQuestions.splice(idx, 1);
+    const container = document.getElementById('questionsBuilder');
+    container.innerHTML = '';
+    surveyQuestions.forEach((q, i) => renderSurveyQuestion(i, q, container));
+  }
+
+  async function saveSurvey() {
+    const title = document.getElementById('surveyTitle').value;
+    if (!title) {
+      alert('Please enter a survey title');
+      return;
+    }
+
+    if (surveyQuestions.length === 0) {
+      alert('Please add at least one question');
+      return;
+    }
+
+    try {
+      // Deactivate any existing active surveys
+      const { data: activeSurveys } = await client.from('surveys').select('id').eq('active', true);
+      if (activeSurveys && activeSurveys.length > 0) {
+        await client.from('surveys').update({ active: false }).eq('active', true);
+      }
+
+      // Create new survey
+      const { error } = await client.from('surveys').insert([{
+        title,
+        questions: surveyQuestions,
+        active: true,
+        created_at: new Date().toISOString()
+      }]);
+
+      if (error) throw error;
+
+      alert('Survey created successfully!');
+      closeModal();
+      loadSurvey();
+      surveyQuestions = [];
+    } catch (error) {
+      alert('Error creating survey: ' + error.message);
+    }
+  }
+
+  async function editSurvey(surveyId) {
+    try {
+      const { data } = await client.from('surveys').select('*').eq('id', surveyId).single();
+      
+      currentEdit = surveyId;
+      surveyQuestions = typeof data.questions === 'string' ? JSON.parse(data.questions) : data.questions;
+      
+      document.getElementById('modalTitle').textContent = 'Edit Survey';
+      
+      document.getElementById('modalBody').innerHTML = `
+        <div class="form-group">
+          <label>Survey Title</label>
+          <input type="text" id="surveyTitle" value="${data.title}">
+        </div>
+        <div id="questionsBuilder"></div>
+        <button class="btn-secondary" onclick="addSurveyQuestion()" style="margin-top: 16px; padding: 10px 16px; width: auto;">+ Add Question</button>
+        <button class="btn-save" onclick="updateSurvey(${surveyId})">Update Survey</button>
+      `;
+      
+      const container = document.getElementById('questionsBuilder');
+      container.innerHTML = '';
+      surveyQuestions.forEach((q, idx) => renderSurveyQuestion(idx, q, container));
+      
+      document.getElementById('modal').classList.add('active');
+    } catch (error) {
+      alert('Error loading survey: ' + error.message);
+    }
+  }
+
+  async function updateSurvey(surveyId) {
+    const title = document.getElementById('surveyTitle').value;
+    if (!title || surveyQuestions.length === 0) {
+      alert('Please fill all fields');
+      return;
+    }
+
+    try {
+      await client.from('surveys').update({ title, questions: surveyQuestions }).eq('id', surveyId);
+      alert('Survey updated!');
+      closeModal();
+      loadSurvey();
+      surveyQuestions = [];
+    } catch (error) {
+      alert('Error updating: ' + error.message);
+    }
+  }
+
+  async function deactivateSurvey(surveyId) {
+    if (confirm('Deactivate this survey?')) {
       try {
-        await client.from('survey_responses').delete().eq('id', id);
+        await client.from('surveys').update({ active: false }).eq('id', surveyId);
+        loadSurvey();
+      } catch (error) {
+        alert('Error deactivating: ' + error.message);
+      }
+    }
+  }
+
+  async function deleteSurveyById(surveyId) {
+    if (confirm('Delete this survey permanently?')) {
+      try {
+        await client.from('surveys').delete().eq('id', surveyId);
         loadSurvey();
       } catch (error) {
         alert('Error deleting: ' + error.message);
       }
     }
+  }
+
+  async function deleteSurveyResponse(responseId) {
+    if (confirm('Delete this response?')) {
+      try {
+        await client.from('survey_responses').delete().eq('id', responseId);
+        loadSurvey();
+      } catch (error) {
+        alert('Error deleting: ' + error.message);
+      }
+    }
+  }
+
+  // ===== SURVEY =====
+  async function copyRegistrationLink(eventId) {
+    const base = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+    const link = `${base}register.html?event_id=${eventId}`;
+    navigator.clipboard.writeText(link).then(() => {
+      alert('Registration link copied!');
+    }).catch(() => {
+      alert('Copy failed. Please copy manually: ' + link);
+    });
   }
 
   // ===== MODAL =====

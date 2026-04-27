@@ -183,7 +183,7 @@
   }
   .btn-ghost:hover { color: var(--white); border-color: var(--white); }
   .hero-stats {
-    position: absolute; bottom: 60px; right: 5vw;
+    position: absolute; bottom: -30px;
     display: flex; gap: 48px;
     animation: fadeUp 0.8s 0.4s ease both;
   }
@@ -532,6 +532,63 @@
   }
   .join-box .btn-navy:hover { opacity: 0.85; }
 
+  /* ───── SURVEY ───── */
+  #survey { background: var(--cream); }
+  .survey-layout {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 80px;
+    margin-top: 60px;
+    align-items: start;
+  }
+  .survey-info h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px; color: var(--navy);
+    margin-bottom: 16px; line-height: 1.3;
+  }
+  .survey-info p { font-size: 15px; color: var(--gray-text); line-height: 1.7; margin-bottom: 32px; }
+  .survey-form {
+    background: var(--white);
+    border-radius: 12px;
+    padding: 40px;
+    border: 1px solid rgba(0,0,0,0.07);
+  }
+  .form-question {
+    margin-bottom: 24px;
+  }
+  .form-question label {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 10px;
+  }
+  .form-question .required {
+    color: var(--red-accent);
+  }
+  .form-question input[type="radio"],
+  .form-question input[type="checkbox"] {
+    margin-right: 8px;
+  }
+  .form-question .option {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  .survey-submit {
+    width: 100%;
+    background: var(--navy); color: var(--gold);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    padding: 14px 28px; border-radius: 4px;
+    border: none; cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+  }
+  .survey-submit:hover { background: var(--navy-mid); transform: translateY(-2px); }
+  .survey-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
   /* ───── CONTACT ───── */
   #contact { background: var(--cream); }
   .contact-layout {
@@ -688,6 +745,7 @@
     <li><a href="#events">Events</a></li>
     <li><a href="#initiatives">Initiatives</a></li>
     <li><a href="#announcements">News</a></li>
+    <li><a href="#survey">Survey</a></li>
     <li><a href="#contact" class="nav-cta">Contact Us</a></li>
   </ul>
   <div class="hamburger" id="hamburger" onclick="toggleMenu()">
@@ -701,6 +759,7 @@
   <a href="#events" onclick="toggleMenu()">Events</a>
   <a href="#initiatives" onclick="toggleMenu()">Initiatives</a>
   <a href="#announcements" onclick="toggleMenu()">News</a>
+  <a href="#survey" onclick="toggleMenu()">Survey</a>
   <a href="#contact" onclick="toggleMenu()">Contact Us</a>
 </div>
 
@@ -790,7 +849,7 @@
   <div class="board-grid">
     <div class="board-card reveal">
       <div class="board-avatar">
-        <img src="images/p9593.JPG" alt="Ladan Elfatih"style="width:100%; height:100%; object-fit: cover; object-position: 50% 20%;">
+        <img src="images/Artboard 1.jpg" alt="Ladan Elfatih"style="width:100%; height:100%; object-fit: cover;">
       </div>
       <div class="board-info">
         <div class="board-role">SCHOOL AMBASSADOR</div>
@@ -799,7 +858,7 @@
       </div>
     </div>
       <div class="board-card reveal">
-      <div class="board-avatar"><img src="images/p12966.JPG" alt="Aryan Ahire"style="width:100%; height:100%; object-fit: cover; object-position: 50% 20%;"></div>
+      <div class="board-avatar"><img src="images/Artboard 2.jpg" alt="Aryan Ahire"style="width:100%; height:100%; object-fit: cover;"></div>
       <div class="board-info">
         <div class="board-role">SCHOOL PRODIGY</div>
         <div class="board-name">Aryan Ahire </div>
@@ -808,7 +867,7 @@
     </div>
     <div class="board-card reveal">
       <div class="board-avatar">
-        <img src="images/p14117.JPG" alt="Amin Sabak"style="width:100%; height:100%; object-fit: cover; object-position: top;">
+        <img src="images/Artboard 3.jpg" alt="Amin Sabak"style="width:100%; height:100%; object-fit: cover;">
       </div>
       <div class="board-info">
         <div class="board-role">HEAD BOY</div>
@@ -818,7 +877,7 @@
     </div>
     <div class="board-card reveal">
       <div class="board-avatar">
-        <img src="images/p9194.JPG" alt="Sanvi Navas"style="width:100%; height:100%; object-fit: cover; object-position: 50% 20%;">
+        <img src="images/Artboard 6.jpg" alt="Sanvi Navas"style="width:100%; height:100%; object-fit: cover; ">
       </div>
       <div class="board-info">
         <div class="board-role">HEAD GIRL</div>
@@ -828,17 +887,17 @@
     </div>
         <div class="board-card reveal">
       <div class="board-avatar">
-        <img src="images/p9776.JPG" alt="Hishaam Mohamed"style="width:100%; height:100%; object-fit: cover; object-position: 50% 30%;">
+        <img src="images/Artboard 5.jpg" alt="Hishaam Mohamed"style="width:100%; height:100%; object-fit: cover;">
       </div>
       <div class="board-info">
         <div class="board-role">HEAD PREFECT (BOY)</div>
         <div class="board-name">Hishaam Mohamed</div>
-        <div class="board-grade">Grade 11-E</div>
+        <div class="board-grade">Grade 11-D</div>
       </div>
     </div>
     <div class="board-card reveal">
       <div class="board-avatar">
-        <img src="images/p9800.JPG" alt="Hana Mohamed Hafeel"style="width:100%; height:100%; object-fit: cover; object-position: 50% 30%;">
+        <img src="images/Artboard 4.jpg" alt="Hana Mohamed Hafeel"style="width:100%; height:100%; object-fit: cover;">
       </div>
       <div class="board-info">
         <div class="board-role">HEAD PREFECT (GIRL)</div>
@@ -848,17 +907,17 @@
     </div>
     <div class="board-card reveal">
       <div class="board-avatar">
-        <img src="images/p12869.JPG" alt="Sinan Bin Faisal"style="width:100%; height:100%; object-fit: cover; object-position: 50% 29%;">
+        <img src="images/Artboard 11.jpg" alt="Sinan Bin Faisal"style="width:100%; height:100%; object-fit: cover; ">
       </div>
       <div class="board-info">
         <div class="board-role">IT SECRETARY</div>
         <div class="board-name">Sinan Bin Faisal</div>
-        <div class="board-grade">Grade 11-C</div>
+        <div class="board-grade">Grade 11-B</div>
       </div>
     </div>
     <div class="board-card reveal">
       <div class="board-avatar">
-        <img src="images/p9673.JPG" alt="Aathifa"style="width:100%; height:100%; object-fit: cover; object-position: 50% 29%;">
+        <img src="images/Artboard 9.jpg" alt="Aathifa"style="width:100%; height:100%; object-fit: cover; ">
       </div>
       <div class="board-info">
         <div class="board-role">LITERARY SECRETARY</div>
@@ -868,7 +927,7 @@
     </div>
     <div class="board-card reveal">
       <div class="board-avatar">
-        <img src="images/p9773.JPG" alt="Shahama Shereen Rifayees"style="width:100%; height:100%; object-fit: cover; object-position: 50% 29%;">
+        <img src="images/Artboard 7.jpg" alt="Shahama Shereen Rifayees"style="width:100%; height:100%; object-fit: cover;">
       </div>
       <div class="board-info">
         <div class="board-role">CULTURAL SECRETARY</div>
@@ -878,17 +937,17 @@
     </div>
     <div class="board-card reveal">
       <div class="board-avatar">
-        <img src="images/p11169.JPG" alt="Sharon Riya"style="width:100%; height:100%; object-fit: cover; object-position: 50% 26%;">
+        <img src="images/Artboard 13.jpg" alt="Sharon Riya"style="width:100%; height:100%; object-fit: cover;">
       </div>
       <div class="board-info">
         <div class="board-role">SPORTS CAPTAIN</div>
         <div class="board-name">Sharon Riya</div>
-        <div class="board-grade">Grade 11-A</div>
+        <div class="board-grade">Grade 11-B</div>
       </div>
     </div>
     <div class="board-card reveal">
       <div class="board-avatar">
-        <img src="images/p11291.JPG" alt="Isra Ansari"style="width:100%; height:100%; object-fit: cover; object-position: 50% 29%;">
+        <img src="images/Artboard 10.jpg" alt="Isra Ansari"style="width:100%; height:100%; object-fit: cover; ">
       </div>
       <div class="board-info">
         <div class="board-role">ASSISTANT IT SECRETARY</div>
@@ -898,7 +957,7 @@
     </div>
     <div class="board-card reveal">
       <div class="board-avatar">
-        <img src="images/p9659.JPG" alt="Fathima Mehar Nasim"style="width:100%; height:100%; object-fit: cover; object-position: 50% 29%;">
+        <img src="images/Artboard 12.jpg" alt="Fathima Mehar Nasim"style="width:100%; height:100%; object-fit: cover;">
       </div>
       <div class="board-info">
         <div class="board-role">ASSISTANT LITERARY SECRETARY</div>
@@ -907,31 +966,37 @@
       </div>
     </div>
     <div class="board-card reveal">
-      <div class="board-avatar">NN</div>
+      <div class="board-avatar">
+        <img src="images/Artboard 8.jpg" alt="Noureennajim"style="width:100%; height:100%; object-fit: cover;">
+      </div>
       <div class="board-info">
         <div class="board-role">ASSISTANT CULTURAL SECRETARY</div>
-        <div class="board-name">Noureennajim</div>
+        <div class="board-name">Noureen Najim</div>
         <div class="board-grade">Grade 11-B</div>
       </div>
     </div>
     <div class="board-card reveal">
-      <div class="board-avatar">MA</div>
+      <div class="board-avatar">
+        <img src="images/Artboard 14.jpg" alt="Mohammad Affan"style="width:100%; height:100%; object-fit: cover;">
+      </div>
       <div class="board-info">
         <div class="board-role">ASST. SPORTS CAPTAIN</div>
         <div class="board-name">Mohammad Affan</div>
-        <div class="board-grade">Grade 11-D</div>
+        <div class="board-grade">Grade 11-A</div>
       </div>
     </div>
     <div class="board-card reveal">
-      <div class="board-avatar">SA</div>
+      <div class="board-avatar">
+        <img src="images/Artboard 18.jpg" alt="Siba Ashraf"style="width:100%; height:100%; object-fit: cover;">
+      </div>
       <div class="board-info">
         <div class="board-role">RUBY (CAPTAIN)</div>
         <div class="board-name">Siba Ashraf</div>
-        <div class="board-grade">Grade 11-B</div>
+        <div class="board-grade">Grade 11-A</div>
       </div>
     </div>
     <div class="board-card reveal">
-      <div class="board-avatar">HA</div>
+      <div class="board-avatar"> <img src="images/Artboard 16.jpg" alt="Hamilan"style="width:100%; height:100%; object-fit: cover;"></div>
       <div class="board-info">
         <div class="board-role">SAPPHIRE (CAPTAIN)</div>
         <div class="board-name">Hamilan</div>
@@ -939,7 +1004,9 @@
       </div>
     </div>
     <div class="board-card reveal">
-      <div class="board-avatar">AM</div>
+      <div class="board-avatar">
+        <img src="images/Artboard 15.jpg" alt="Aimen Mahatae"style="width:100%; height:100%; object-fit: cover;">
+      </div>
       <div class="board-info">
         <div class="board-role">EMERALD (CAPTAIN)</div>
         <div class="board-name">Aimen Mahatae</div>
@@ -947,7 +1014,9 @@
       </div>
     </div>
     <div class="board-card reveal">
-      <div class="board-avatar">MI</div>
+      <div class="board-avatar">
+        <img src="images/Artboard 17.jpg" alt="Mirsab"style="width:100%; height:100%; object-fit: cover;">
+      </div>
       <div class="board-info">
         <div class="board-role">TOPAZ (CAPTAIN)</div>
         <div class="board-name">Mirsab</div>
@@ -1041,6 +1110,20 @@
         <a href="#contact" class="btn-navy">Get Involved →</a>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- SURVEY -->
+<section id="survey">
+  <div class="section-tag">Feedback</div>
+  <h2 class="section-title">Quick Survey</h2>
+  <div class="survey-layout">
+    <div class="survey-info reveal">
+      <h3>Help us improve your school experience.</h3>
+      <p>Your feedback directly influences our decisions. Every response helps us understand what matters most to you — whether it's new events, campus improvements, or student initiatives.</p>
+      <p><strong>✓ Completely Anonymous</strong> — We don't collect names or identifying information.</p>
+      <p><strong>✓ Takes 2-3 minutes</strong> — Quick questions, quick answers.</p>
+      <a href="survey.html" class="btn-primary" style="display: inline-flex; margin-top: 24px;">Take the Survey →</a>
   </div>
 </section>
 
@@ -1319,8 +1402,33 @@
     }
   }
 
+  // Load main survey link
+  async function loadMainSurvey() {
+    try {
+      const { data: mainSurvey, error } = await client
+        .from('surveys')
+        .select('id, title')
+        .eq('main', true)
+        .eq('active', true)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows returned"
+      
+      const surveyLink = document.querySelector('#survey a[href="survey.html"]');
+      if (mainSurvey && surveyLink) {
+        surveyLink.href = `survey.html?survey_id=${mainSurvey.id}`;
+        surveyLink.textContent = `Take the "${mainSurvey.title}" Survey →`;
+      }
+    } catch (error) {
+      console.error('Error loading main survey:', error);
+    }
+  }
+
   // Load data when page loads
-  document.addEventListener('DOMContentLoaded', loadPageData);
+  document.addEventListener('DOMContentLoaded', () => {
+    loadPageData();
+    loadMainSurvey();
+  });
 </script>
 </body>
 </html>

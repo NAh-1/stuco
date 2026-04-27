@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Survey | STUCO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --navy: #07112b;
+      --gold: #f2b705;
+      --cream: #faf8f2;
+      --white: #ffffff;
+      --gray-text: #6b6860;
+      --red-accent: #c0392b;
+      --success: #27ae60;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--navy); }
+    
+    .page-header { padding: 40px 5vw 0; }
+    .page-header h1 { font-size: clamp(32px, 5vw, 48px); margin-bottom: 12px; }
+    .page-header p { color: var(--gray-text); max-width: 720px; line-height: 1.7; }
+    
+    .form-wrapper { max-width: 800px; margin: 0 auto; padding: 40px 5vw 80px; }
+    
+    .survey-intro { background: var(--white); border-radius: 18px; padding: 32px; box-shadow: 0 24px 60px rgba(7,17,43,0.08); margin-bottom: 24px; }
+    .survey-intro h2 { font-size: 28px; margin-bottom: 12px; }
+    .survey-intro p { color: var(--gray-text); line-height: 1.7; margin-bottom: 12px; }
+    .survey-intro .meta { color: var(--gray-text); font-size: 14px; margin-top: 16px; }
+    
+    .survey-card { background: var(--white); border-radius: 18px; padding: 32px; border: 1px solid rgba(0,0,0,0.06); }
+    
+    .form-question { margin-bottom: 28px; }
+    .form-question label { display: block; font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 12px; }
+    .form-question .required { color: var(--red-accent); }
+    
+    .form-group input, 
+    .form-group textarea,
+    .form-group select { 
+      width: 100%; 
+      padding: 14px 16px; 
+      border: 1.5px solid rgba(0,0,0,0.1); 
+      border-radius: 10px; 
+      font-size: 15px; 
+      color: var(--navy); 
+      background: #f7f5ef; 
+      font-family: 'DM Sans', sans-serif;
+    }
+    .form-group textarea { min-height: 120px; resize: vertical; }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { 
+      outline: none; 
+      border-color: var(--gold); 
+      background: #fff; 
+    }
+    
+    .option { display: flex; align-items: flex-start; margin-bottom: 12px; }
+    .option input { margin-right: 12px; margin-top: 3px; cursor: pointer; }
+    .option label { cursor: pointer; margin: 0; font-weight: 400; }
+    
+    .submit-btn { 
+      width: 100%; 
+      background: var(--navy); 
+      color: var(--gold); 
+      border: none; 
+      border-radius: 10px; 
+      padding: 16px; 
+      font-size: 15px; 
+      font-weight: 700; 
+      cursor: pointer; 
+      transition: transform 0.2s, background 0.2s; 
+    }
+    .submit-btn:hover { background: #0e1e47; transform: translateY(-1px); }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    .notice { margin-top: 18px; color: var(--gray-text); font-size: 14px; }
+    
+    .feedback { padding: 16px; border-radius: 12px; margin-bottom: 18px; display: none; }
+    .feedback.success { background: #eaf7eb; color: #21703a; border-left: 4px solid var(--success); }
+    .feedback.error { background: #fce8e6; color: #9f2a26; border-left: 4px solid var(--red-accent); }
+    
+    .loading { color: var(--gray-text); margin-top: 20px; }
+    
+    .empty-state { text-align: center; padding: 40px; color: var(--gray-text); }
+    
+    @media (max-width: 700px) { 
+      .survey-card { padding: 24px; } 
+    }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <div class="form-wrapper">
+      <p style="color: var(--gold); font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px;">Feedback</p>
+      <h1>Help us improve</h1>
+      <p id="surveyIntro">Your feedback is valuable. Please take a few minutes to answer the following questions.</p>
+    </div>
+  </div>
+
+  <div class="form-wrapper">
+    <div id="surveyIntroCard" class="survey-intro">
+      <div class="loading">Loading survey...</div>
+    </div>
+
+    <div class="survey-card">
+      <div id="feedback" class="feedback"></div>
+      <form id="surveyForm" onsubmit="submitSurvey(event)">
+        <div id="questionsContainer"></div>
+        <button type="submit" class="submit-btn" id="submitBtn">Submit Survey →</button>
+      </form>
+      <p class="notice">✓ Your response is completely anonymous and will help us better serve the school community.</p>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const surveyId = urlParams.get('survey_id');
+    const feedback = document.getElementById('feedback');
+    const submitBtn = document.getElementById('submitBtn');
+    let surveyData = null;
+
+    async function loadSurvey() {
+      if (!surveyId) {
+        const { data: mainSurvey, error: mainError } = await client
+          .from('surveys')
+          .select('id')
+          .eq('main', true)
+          .eq('active', true)
+          .single();
+
+        if (mainSurvey && !mainError) {
+          window.location.search = `?survey_id=${mainSurvey.id}`;
+          return;
+        }
+
+        document.getElementById('surveyIntroCard').innerHTML = '<p class="empty-state">No survey selected. Use a unique survey link to participate.</p>';
+        document.getElementById('questionsContainer').innerHTML = '';
+        submitBtn.disabled = true;
+        return;
+      }
+
+      try {
+        const { data, error } = await client
+          .from('surveys')
+          .select('*')
+          .eq('id', surveyId)
+          .single();
+
+        if (error || !data) {
+          document.getElementById('surveyIntroCard').innerHTML = '<p class="empty-state">Survey not found. Please verify the survey link.</p>';
+          document.getElementById('questionsContainer').innerHTML = '';
+          submitBtn.disabled = true;
+          return;
+        }
+
+        surveyData = data;
+
+        // Parse questions if needed
+        let questions = data.questions;
+        if (typeof questions === 'string') {
+          questions = JSON.parse(questions);
+        }
+
+        // Display survey intro
+        document.getElementById('surveyIntroCard').innerHTML = `
+          <h2>${data.title}</h2>
+          <p>${data.description || 'Your feedback helps us understand what matters most to you.'}</p>
+          <div class="meta">${questions.length} question${questions.length !== 1 ? 's' : ''} • Takes 2-3 minutes</div>
+        `;
+
+        // Render questions
+        renderQuestions(questions);
+      } catch (error) {
+        console.error('Error loading survey:', error);
+        document.getElementById('surveyIntroCard').innerHTML = '<p class="empty-state">Could not load survey. Try again later.</p>';
+        submitBtn.disabled = true;
+      }
+    }
+
+    function renderQuestions(questions) {
+      let html = '';
+      
+      questions.forEach((q, idx) => {
+        html += `
+          <div class="form-question">
+            <label>${q.question}${q.required ? '<span class="required"> *</span>' : ''}</label>
+        `;
+
+        if (q.type === 'text') {
+          html += `
+            <div class="form-group">
+              <input type="text" 
+                     id="q${idx}" 
+                     name="q${idx}"
+                     placeholder="Your answer..." 
+                     ${q.required ? 'required' : ''}>
+            </div>
+          `;
+        } else if (q.type === 'textarea') {
+          html += `
+            <div class="form-group">
+              <textarea id="q${idx}" 
+                        name="q${idx}"
+                        placeholder="Your answer..." 
+                        ${q.required ? 'required' : ''}></textarea>
+            </div>
+          `;
+        } else if (q.type === 'radio') {
+          html += '<div>';
+          q.options.forEach(opt => {
+            html += `
+              <div class="option">
+                <input type="radio" id="q${idx}_${opt}" name="q${idx}" value="${opt}" ${q.required ? 'required' : ''}>
+                <label for="q${idx}_${opt}">${opt}</label>
+              </div>
+            `;
+          });
+          html += '</div>';
+        } else if (q.type === 'checkbox') {
+          html += '<div>';
+          q.options.forEach(opt => {
+            html += `
+              <div class="option">
+                <input type="checkbox" id="q${idx}_${opt}" name="q${idx}" value="${opt}">
+                <label for="q${idx}_${opt}">${opt}</label>
+              </div>
+            `;
+          });
+          html += '</div>';
+        } else if (q.type === 'dropdown') {
+          html += `
+            <div class="form-group">
+              <select id="q${idx}" name="q${idx}" ${q.required ? 'required' : ''}>
+                <option value="">Select an option...</option>
+          `;
+          q.options.forEach(opt => {
+            html += `<option value="${opt}">${opt}</option>`;
+          });
+          html += `
+              </select>
+            </div>
+          `;
+        }
+
+        html += '</div>';
+      });
+
+      document.getElementById('questionsContainer').innerHTML = html;
+    }
+
+    async function submitSurvey(e) {
+      e.preventDefault();
+      feedback.style.display = 'none';
+
+      if (!surveyData) {
+        showFeedback('Survey data not found.', 'error');
+        return;
+      }
+
+      try {
+        const form = document.getElementById('surveyForm');
+        const formData = new FormData(form);
+        
+        let questions = surveyData.questions;
+        if (typeof questions === 'string') {
+          questions = JSON.parse(questions);
+        }
+
+        const responses = {};
+
+        questions.forEach((q, idx) => {
+          const qKey = `q${idx}`;
+          
+          if (q.type === 'checkbox') {
+            const checkboxes = document.querySelectorAll(`input[name="${qKey}"]:checked`);
+            const values = Array.from(checkboxes).map(cb => cb.value);
+            responses[q.question] = values.length > 0 ? values.join(', ') : '';
+          } else if (q.type === 'radio') {
+            const radio = document.querySelector(`input[name="${qKey}"]:checked`);
+            responses[q.question] = radio ? radio.value : '';
+          } else {
+            const value = formData.get(qKey) || '';
+            responses[q.question] = value;
+          }
+        });
+
+        // Validate required fields
+        for (const q of questions) {
+          if (q.required && (!responses[q.question] || responses[q.question].trim() === '')) {
+            showFeedback('Please answer all required questions.', 'error');
+            return;
+          }
+        }
+
+        // Submit to database
+        const { error } = await client.from('survey_responses').insert([{
+          survey_id: surveyId,
+          responses: responses,
+          submitted_at: new Date().toISOString()
+        }]);
+
+        if (error) throw error;
+
+        // Show success message
+        showFeedback('Thank you! Your response has been submitted.', 'success');
+        submitBtn.textContent = 'Response Submitted ✓';
+        submitBtn.disabled = true;
+
+        // Reset form after 3 seconds
+        setTimeout(() => {
+          form.reset();
+          submitBtn.textContent = 'Submit Survey →';
+          submitBtn.disabled = false;
+          loadSurvey();
+        }, 3000);
+      } catch (error) {
+        console.error('Error submitting survey:', error);
+        showFeedback('Error submitting survey. Please try again.', 'error');
+      }
+    }
+
+    function showFeedback(message, type) {
+      feedback.textContent = message;
+      feedback.className = `feedback ${type}`;
+      feedback.style.display = 'block';
+      window.scrollTo(0, 0);
+    }
+
+    // Load survey when page loads
+    document.addEventListener('DOMContentLoaded', loadSurvey);
+  </script>
+</body>
+</html>
