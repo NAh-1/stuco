@@ -899,6 +899,7 @@
                 <h3>${ann.title}</h3>
                 <p>${ann.content.substring(0, 100)}...</p>
                 <small>${ann.date}</small>
+                ${ann.redirect_url ? `<div style="font-size: 11px; color: var(--gold); margin-top: 5px;">Redirect: ${ann.redirect_url}</div>` : ''}
               </div>
               <div class="card-actions">
                 <button class="btn-sm btn-edit" onclick="editAnnouncement(${ann.id})">Edit</button>
@@ -932,6 +933,10 @@
         <label>Date</label>
         <input type="text" id="annDate" placeholder="e.g., September 5, 2026">
       </div>
+      <div class="form-group">
+        <label>Redirect URL (Optional)</label>
+        <input type="text" id="annRedirectUrl" placeholder="https://example.com/news-link">
+      </div>
       <button class="btn-save" onclick="saveAnnouncement()">Save Announcement</button>
     `;
     document.getElementById('modal').classList.add('active');
@@ -955,6 +960,10 @@
           <label>Date</label>
           <input type="text" id="annDate" value="${data.date}">
         </div>
+        <div class="form-group">
+          <label>Redirect URL (Optional)</label>
+          <input type="text" id="annRedirectUrl" value="${data.redirect_url || ''}">
+        </div>
         <button class="btn-save" onclick="saveAnnouncement()">Update Announcement</button>
       `;
       document.getElementById('modal').classList.add('active');
@@ -967,6 +976,7 @@
     const title = document.getElementById('annTitle').value;
     const content = document.getElementById('annContent').value;
     const date = document.getElementById('annDate').value;
+    const redirect_url = document.getElementById('annRedirectUrl').value;
 
     if (!title || !content || !date) {
       alert('Please fill all fields');
@@ -975,9 +985,9 @@
 
     try {
       if (currentEdit) {
-        await client.from('announcements').update({ title, content, date }).eq('id', currentEdit);
+        await client.from('announcements').update({ title, content, date, redirect_url }).eq('id', currentEdit);
       } else {
-        await client.from('announcements').insert([{ title, content, date }]);
+        await client.from('announcements').insert([{ title, content, date, redirect_url }]);
       }
       closeModal();
       loadAnnouncements();
@@ -1011,10 +1021,12 @@
       if (data && data.length > 0) {
         data.forEach(evt => {
           const registrationLink = `register.html?event_id=${evt.id}`;
+          const statusBadge = evt.registration_closed ? '<span class="field-badge" style="background:#fce8e6; color:#9f2a26;">Closed</span>' : '<span class="field-badge" style="background:#eaf7eb; color:#21703a;">Open</span>';
           html += `
             <div class="card">
               <div class="card-content">
                 <h3>${evt.title}</h3>
+                <div style="margin-bottom: 8px;">${statusBadge}</div>
                 <p>${evt.description.substring(0, 80)}...</p>
                 <small>${evt.event_date} @ ${evt.location}</small>
                 <div style="margin-top:10px; font-size:12px; color:rgba(0,0,0,0.6);">
@@ -1082,6 +1094,20 @@
         <textarea id="evtDescription" placeholder="Event description"></textarea>
       </div>
       <div class="form-group">
+        <label>Registration Closed?</label>
+        <input type="checkbox" id="evtClosed"> Stop accepting registrations
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Use External Registration?</label>
+          <input type="checkbox" id="evtExternal"> Redirect to external link
+        </div>
+        <div class="form-group">
+          <label>External Registration URL</label>
+          <input type="text" id="evtRedirectUrl" placeholder="https://forms.google.com/...">
+        </div>
+      </div>
+      <div class="form-group">
         <label>Featured Event?</label>
         <input type="checkbox" id="evtFeatured"> Yes
       </div>
@@ -1135,6 +1161,20 @@
           <textarea id="evtDescription">${data.description}</textarea>
         </div>
         <div class="form-group">
+          <label>Registration Closed?</label>
+          <input type="checkbox" id="evtClosed" ${data.registration_closed ? 'checked' : ''}> Stop accepting local registrations
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Use External Registration?</label>
+            <input type="checkbox" id="evtExternal" ${data.use_external_link ? 'checked' : ''}> Redirect to external link
+          </div>
+          <div class="form-group">
+            <label>External Registration URL</label>
+            <input type="text" id="evtRedirectUrl" value="${data.redirect_url || ''}">
+          </div>
+        </div>
+        <div class="form-group">
           <label>Featured Event?</label>
           <input type="checkbox" id="evtFeatured" ${data.is_featured ? 'checked' : ''}> Yes
         </div>
@@ -1156,6 +1196,9 @@
     const month = document.getElementById('evtMonth').value;
     const day = document.getElementById('evtDay').value;
     const is_featured = document.getElementById('evtFeatured').checked;
+    const registration_closed = document.getElementById('evtClosed').checked;
+    const use_external_link = document.getElementById('evtExternal').checked;
+    const redirect_url = document.getElementById('evtRedirectUrl').value;
 
     if (!title || !description || !event_date || !location) {
       alert('Please fill all required fields');
@@ -1163,7 +1206,7 @@
     }
 
     try {
-      const eventData = { title, description, event_date, start_time, end_time, location, month, day, is_featured };
+      const eventData = { title, description, event_date, start_time, end_time, location, month, day, is_featured, registration_closed, use_external_link, redirect_url };
       if (currentEdit) {
         await client.from('events').update(eventData).eq('id', currentEdit);
       } else {

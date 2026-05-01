@@ -782,7 +782,7 @@
         Upcoming Events
       </a>
       <a href="#initiatives" class="btn-ghost">
-        Our Initiatives
+        Work in Motion
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </a>
     </div>
@@ -1061,7 +1061,7 @@
 <!-- INITIATIVES -->
 <section id="initiatives">
   <div class="section-tag">What We're Building</div>
-  <h2 class="section-title">Our Initiatives</h2>
+  <h2 class="section-title">Work in Motion</h2>
   <div class="initiatives-grid" id="initiativesGrid">
     <div class="initiative-card reveal">
       <div class="initiative-top t1"><h3>Loading...</h3></div>
@@ -1247,8 +1247,9 @@
         let html = '';
         data.forEach(ann => {
           const dotClass = ann.active ? '' : ' gray';
+          const clickAttr = ann.redirect_url ? `onclick="window.location.href='${ann.redirect_url}'"` : '';
           html += `
-            <div class="announcement-item">
+            <div class="announcement-item" ${clickAttr}>
               <div class="ann-dot${dotClass}"></div>
               <div>
                 <div class="ann-date">${ann.date}</div>
