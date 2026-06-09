@@ -158,6 +158,12 @@
 
         surveyData = data;
 
+        // Handle External Redirection
+        if (data.use_external_link && data.redirect_url) {
+          window.location.href = data.redirect_url;
+          return;
+        }
+
         // Parse questions if needed
         let questions = data.questions;
         if (typeof questions === 'string') {

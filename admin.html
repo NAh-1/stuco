@@ -2010,9 +2010,10 @@
         }
 
         const questionCount = questions.length;
+        const externalBadge = activeSurvey.use_external_link ? ' <span class="field-badge" style="background:#fce8e6; color:#9f2a26; margin-left: 8px;">External</span>' : '';
         document.getElementById('activeSurveyInfo').innerHTML = `
-          <strong>${activeSurvey.title || 'Untitled Survey'}</strong><br>
-          <small>${questionCount} question${questionCount !== 1 ? 's' : ''}</small>
+          <strong>${activeSurvey.title || 'Untitled Survey'}</strong>${externalBadge}<br>
+          <small>${activeSurvey.use_external_link ? 'Redirects to: ' + activeSurvey.redirect_url : questionCount + ' question' + (questionCount !== 1 ? 's' : '')}</small>
         `;
         
         // Show survey link
@@ -2120,6 +2121,16 @@
         <label>Survey Title</label>
         <input type="text" id="surveyTitle" placeholder="e.g., School Experience Feedback">
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Use External Survey?</label>
+          <input type="checkbox" id="surveyExternal"> Redirect to external link
+        </div>
+        <div class="form-group">
+          <label>External Survey URL</label>
+          <input type="text" id="surveyRedirectUrl" placeholder="https://forms.google.com/...">
+        </div>
+      </div>
       <div id="questionsBuilder"></div>
       <button class="btn-secondary" onclick="addSurveyQuestion()" style="margin-top: 16px; padding: 10px 16px; width: auto;">+ Add Question</button>
       <button class="btn-save" onclick="saveSurvey()">Create Survey</button>
@@ -2222,12 +2233,14 @@
 
   async function saveSurvey() {
     const title = document.getElementById('surveyTitle').value;
+    const use_external_link = document.getElementById('surveyExternal').checked;
+    const redirect_url = document.getElementById('surveyRedirectUrl').value;
     if (!title) {
       alert('Please enter a survey title');
       return;
     }
 
-    if (surveyQuestions.length === 0) {
+    if (!use_external_link && surveyQuestions.length === 0) {
       alert('Please add at least one question');
       return;
     }
@@ -2243,6 +2256,8 @@
       const { error } = await client.from('surveys').insert([{
         title,
         questions: surveyQuestions,
+        use_external_link,
+        redirect_url,
         active: true,
         created_at: new Date().toISOString()
       }]);
@@ -2272,6 +2287,16 @@
           <label>Survey Title</label>
           <input type="text" id="surveyTitle" value="${data.title}">
         </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Use External Survey?</label>
+            <input type="checkbox" id="surveyExternal" ${data.use_external_link ? 'checked' : ''}> Redirect to external link
+          </div>
+          <div class="form-group">
+            <label>External Survey URL</label>
+            <input type="text" id="surveyRedirectUrl" value="${data.redirect_url || ''}">
+          </div>
+        </div>
         <div id="questionsBuilder"></div>
         <button class="btn-secondary" onclick="addSurveyQuestion()" style="margin-top: 16px; padding: 10px 16px; width: auto;">+ Add Question</button>
         <button class="btn-save" onclick="updateSurvey(${surveyId})">Update Survey</button>
@@ -2289,13 +2314,15 @@
 
   async function updateSurvey(surveyId) {
     const title = document.getElementById('surveyTitle').value;
-    if (!title || surveyQuestions.length === 0) {
+    const use_external_link = document.getElementById('surveyExternal').checked;
+    const redirect_url = document.getElementById('surveyRedirectUrl').value;
+    if (!title || (!use_external_link && surveyQuestions.length === 0)) {
       alert('Please fill all fields');
       return;
     }
 
     try {
-      await client.from('surveys').update({ title, questions: surveyQuestions }).eq('id', surveyId);
+      await client.from('surveys').update({ title, questions: surveyQuestions, use_external_link, redirect_url }).eq('id', surveyId);
       alert('Survey updated!');
       closeModal();
       loadSurvey();
