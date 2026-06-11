@@ -732,10 +732,61 @@
     transition: color 0.2s;
   }
   #mobile-menu a:hover { color: var(--gold); }
+  /* ───── SURVEY NOTIFICATION ───── */
+  .survey-notification {
+    position: fixed;
+    top: 85px; /* Sits just below the nav bar */
+    right: -400px; /* Hidden off-screen initially */
+    background: var(--white);
+    border: 1px solid rgba(0,0,0,0.07);
+    border-left: 4px solid var(--gold);
+    border-radius: 8px;
+    padding: 16px 20px;
+    box-shadow: 0 10px 40px rgba(7, 17, 43, 0.15);
+    z-index: 1000;
+    width: 320px;
+    transition: right 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .survey-notification.show {
+    right: 20px;
+  }
+  .notification-content {
+    position: relative;
+  }
+  .notification-content .close-btn {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    cursor: pointer;
+    font-size: 22px;
+    color: var(--gray-text);
+    line-height: 1;
+    transition: color 0.2s;
+  }
+  .notification-content .close-btn:hover {
+    color: var(--red-accent);
+  }
+  .notification-content p {
+    font-size: 13px;
+    color: var(--navy);
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+  .btn-sm {
+    padding: 10px 20px;
+    font-size: 12px;
+  }
 </style>
 </head>
 <body>
-
+<!-- SURVEY NOTIFICATION -->
+<div id="survey-notification" class="survey-notification">
+  <div class="notification-content">
+    <span class="close-btn" onclick="closeNotification()">×</span>
+    <p><strong>Got a minute?</strong><br>Help us improve your school experience by sharing your feedback!</p>
+    <a href="survey.html" class="btn-primary btn-sm" id="notif-survey-link">Do Survey →</a>
+  </div>
+</div>
 <!-- NAV -->
 <nav>
   <div class="nav-logo">STUCO <span>'26–'27</span></div>
@@ -788,7 +839,7 @@
     </div>
     <div class="hero-stats">
       <div class="hero-stat">
-        <div class="num">12+</div>
+        <div class="num">2+</div>
         <div class="label">Initiatives</div>
       </div>
       <div class="hero-stat">
@@ -796,7 +847,7 @@
         <div class="label">Events / Year</div>
       </div>
       <div class="hero-stat">
-        <div class="num">800+</div>
+        <div class="num">900+</div>
         <div class="label">Students Served</div>
       </div>
     </div>
@@ -824,7 +875,7 @@
         <div class="pillar-num">02</div>
         <div class="pillar-icon"></div>
         <h3>Events</h3>
-        <p>From from creative fest to farewell — we curate unforgettable moments all year long.</p>
+        <p>From creative fest to farewell — we curate unforgettable moments all year long.</p>
       </div>
       <div class="pillar">
         <div class="pillar-num">03</div>
@@ -1204,6 +1255,19 @@
 
 <script src="config.js"></script>
 <script>
+  // ===== NOTIFICATION LOGIC =====
+  function closeNotification() {
+    const notif = document.getElementById('survey-notification');
+    if(notif) notif.classList.remove('show');
+  }
+
+  window.addEventListener('load', () => {
+    // Show notification 3 seconds after the page loads
+    setTimeout(() => {
+      const notif = document.getElementById('survey-notification');
+      if(notif) notif.classList.add('show');
+    }, 3000);
+  });
   // ===== MOBILE MENU =====
   function toggleMenu() {
     const menu = document.getElementById('mobile-menu');
