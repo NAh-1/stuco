@@ -776,15 +776,121 @@
     padding: 10px 20px;
     font-size: 12px;
   }
+
+  /* GOOGLE FORM VIGNETTE */
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+
+  opacity: 0;
+  visibility: hidden;
+  transition: 0.3s ease;
+}
+
+.popup-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.popup-card {
+  width: min(90%, 500px);
+  background: white;
+  border-radius: 12px;
+  padding: 35px;
+  text-align: center;
+  position: relative;
+  animation: popupScale 0.3s ease;
+}
+
+.popup-card h2 {
+  color: var(--navy);
+  margin-bottom: 15px;
+}
+
+.popup-card p {
+  color: var(--gray-text);
+  line-height: 1.6;
+  margin-bottom: 25px;
+}
+
+.popup-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.popup-btn {
+  background: var(--gold);
+  color: var(--navy);
+  text-decoration: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.popup-btn.secondary {
+  background: #eee;
+  border: none;
+  cursor: pointer;
+}
+
+.popup-close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  border: none;
+  background: none;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+@keyframes popupScale {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 </style>
 </head>
 <body>
-<!-- SURVEY NOTIFICATION -->
-<div id="survey-notification" class="survey-notification">
-  <div class="notification-content">
-    <span class="close-btn" onclick="closeNotification()">×</span>
-    <p><strong>Got a minute?</strong><br>Help us improve your school experience by sharing your feedback!</p>
-    <a href="survey.html" class="btn-primary btn-sm" id="notif-survey-link">Do Survey →</a>
+<!-- GOOGLE FORM VIGNETTE POPUP -->
+<div id="googleFormPopup" class="popup-overlay">
+  <div class="popup-card">
+    <button class="popup-close" onclick="closeGoogleFormPopup()">✕</button>
+
+    <h2>📋 Field Trip Suggestions</h2>
+
+    <p>
+      Fill out our form to share your ideas for future field trips! Your feedback helps us plan fun and engaging experiences for everyone. We can't wait to hear your suggestions!
+    </p>
+
+    <div class="popup-buttons">
+      <a
+        href="https://forms.gle/4RyQkpnW4PE4snZo6"
+        target="_blank"
+        class="popup-btn"
+      >
+        Fill Out Form
+      </a>
+
+      <button
+        class="popup-btn secondary"
+        onclick="closeGoogleFormPopup()"
+      >
+        Maybe Later
+      </button>
+    </div>
   </div>
 </div>
 <!-- NAV -->
@@ -1494,6 +1600,23 @@
     loadPageData();
     loadMainSurvey();
   });
+
+  function showGoogleFormPopup() {
+  document
+    .getElementById("googleFormPopup")
+    .classList.add("show");
+}
+
+function closeGoogleFormPopup() {
+  document
+    .getElementById("googleFormPopup")
+    .classList.remove("show");
+}
+
+// Show popup after 2 seconds
+window.addEventListener("load", () => {
+  setTimeout(showGoogleFormPopup, 2000);
+});
 </script>
 </body>
 </html>
