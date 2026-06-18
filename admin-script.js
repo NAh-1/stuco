@@ -1368,15 +1368,25 @@ function populateOptions(optionsString) {
   }
 
   async function deleteContact(id) {
-    if (confirm('Delete this submission?')) {
-      try {
-        await client.from('contact_submissions').delete().eq('id', id);
-        loadContact();
-      } catch (error) {
-        alert('Error deleting: ' + error.message);
-      }
+  if (confirm('Are you sure you want to permanently delete this submission?')) {
+    try {
+      // 🌟 FIXED: Destructure and check the 'error' object returned by Supabase
+      const { error } = await client
+        .from('contact_submissions')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Successfully deleted! Refresh the UI list
+      loadContact();
+      
+    } catch (error) {
+      console.error('Database deletion failed:', error);
+      alert('Error deleting: ' + error.message);
     }
   }
+}
 
   // ===== SURVEY =====
   async function copyRegistrationLink(eventId) {
