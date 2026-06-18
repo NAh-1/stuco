@@ -267,15 +267,11 @@
   /* ───── BOARD ───── */
   #board { background: var(--navy); }
   .board-grid {
-  display: grid;
-  /* 🌟 Keep your existing template columns, e.g., repeat(3, 1fr) or auto-fit */
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-  gap: 28px;
-  margin-top: 40px;
-  
-  /* 🌟 THE FIX: Centers any remaining cards dynamically on the last row */
-  justify-content: center; 
-}
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 24px;
+    margin-top: 60px;
+  }
   .board-card {
     background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.08);
