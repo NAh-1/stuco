@@ -86,37 +86,54 @@ async function loadEvents() {
     if (error) throw error;
 
     if (data && data.length > 0) {
-      // Find featured event
-      const featured = data.find(e => e.is_featured) || data[0];
       
-      // Populate featured event
-      const featuredDate = featured.month ? featured.month.slice(0, 3).toUpperCase() : 'MAY';
-      const featuredHtml = `
-        <div class="event-featured-date">${featuredDate}</div>
-        <div class="event-tag-pill">⭐ Featured Event</div>
-        <h3>${featured.title}</h3>
-        <p>${featured.description}</p>
-        <div class="event-meta">
-          <div class="event-meta-item">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            ${featured.event_date}
+      // Find featured event (Fix: removed the fallback that forced data[0])
+      const featured = data.find(e => e.is_featured);
+      
+      // Populate featured event if it explicitly exists
+      if (featured) {
+        if (document.getElementById('eventFeatured')) {
+          document.getElementById('eventFeatured').style.display = 'block';
+        }
+        
+        const featuredDate = featured.month ? featured.month.slice(0, 3).toUpperCase() : 'MAY';
+        const featuredHtml = `
+          <div class="event-featured-date">${featuredDate}</div>
+          <div class="event-tag-pill">⭐ Featured Event</div>
+          <h3>${featured.title}</h3>
+          <p>${featured.description}</p>
+          <div class="event-meta">
+            <div class="event-meta-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              ${featured.event_date}
+            </div>
+            <div class="event-meta-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              ${featured.start_time} – ${featured.end_time}
+            </div>
+            <div class="event-meta-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              ${featured.location}
+            </div>
           </div>
-          <div class="event-meta-item">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            ${featured.start_time} – ${featured.end_time}
-          </div>
-          <div class="event-meta-item">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            ${featured.location}
-          </div>
-        </div>
-        <a href="register.html?event_id=${featured.id}" class="btn-primary" style="font-size:13px; padding: 12px 24px;">
-          Register Now →
-        </a>
-      `;
-      document.getElementById('eventFeatured').innerHTML = featuredHtml;
+          <a href="register.html?event_id=${featured.id}" class="btn-primary" style="font-size:13px; padding: 12px 24px;">
+            Register Now →
+          </a>
+        `;
+        const featuredContainer = document.getElementById('eventFeatured');
+        if (featuredContainer) {
+          featuredContainer.innerHTML = featuredHtml;
+        }
+      } else {
+        // Safe hide if no event has been checked as featured in the admin panel
+        const featuredContainer = document.getElementById('eventFeatured');
+        if (featuredContainer) {
+          featuredContainer.innerHTML = '';
+          featuredContainer.style.display = 'none';
+        }
+      }
 
-      // Populate events list
+      // Populate events list (Only filters out the featured event if one exists)
       const otherEvents = data.filter(e => !e.is_featured).slice(0, 5);
       let listHtml = '';
       otherEvents.forEach(evt => {
@@ -132,7 +149,11 @@ async function loadEvents() {
           </a>
         `;
       });
-      document.getElementById('eventsList').innerHTML = listHtml;
+      
+      const listContainer = document.getElementById('eventsList');
+      if (listContainer) {
+        listContainer.innerHTML = listHtml;
+      }
     }
   } catch (error) {
     console.error('Error loading events:', error);
