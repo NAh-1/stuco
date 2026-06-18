@@ -293,110 +293,64 @@
   }
 
   // ===== EVENTS =====
-  async function loadEvents() {
-    try {
-      const { data, error } = await client
-        .from('events')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      let html = '';
-      if (data && data.length > 0) {
-        data.forEach(evt => {
-          const registrationLink = `register.html?event_id=${evt.id}`;
-          const statusBadge = evt.registration_closed ? '<span class="field-badge" style="background:#fce8e6; color:#9f2a26;">Closed</span>' : '<span class="field-badge" style="background:#eaf7eb; color:#21703a;">Open</span>';
-          html += `
-            <div class="card">
-              <div class="card-content">
-                <h3>${evt.title}</h3>
-                <div style="margin-bottom: 8px;">${statusBadge}</div>
-                <p>${evt.description.substring(0, 80)}...</p>
-                <small>${evt.event_date} @ ${evt.location}</small>
-                <div style="margin-top:10px; font-size:12px; color:rgba(0,0,0,0.6);">
-                  Registration link: <a href="${registrationLink}" target="_blank">Open form</a>
-                </div>
-              </div>
-              <div class="card-actions">
-                <button class="btn-sm btn-edit" onclick="editEvent(${evt.id})">Edit</button>
-                <button class="btn-sm btn-delete" onclick="deleteEvent(${evt.id})">Delete</button>
-                <button class="btn-sm btn-edit" onclick="openFormBuilder(${evt.id})">Edit Form</button>
-                <button class="btn-sm btn-edit" onclick="copyRegistrationLink(${evt.id})">Copy Link</button>
-              </div>
-            </div>
-          `;
-        });
-      } else {
-        html = '<div class="empty-state"><p>No events yet</p></div>';
-      }
-      document.getElementById('eventsList').innerHTML = html;
-    } catch (error) {
-      console.error('Error loading events:', error);
-    }
-  }
-
   function openAddEvent() {
     currentEdit = null;
     document.getElementById('modalTitle').textContent = 'New Event';
     document.getElementById('modalBody').innerHTML = `
-      <div class="form-row">
-        <div class="form-group">
-          <label>Title</label>
-          <input type="text" id="evtTitle" placeholder="Event title">
-        </div>
-        <div class="form-group">
-          <label>Month (MAY)</label>
-          <input type="text" id="evtMonth" placeholder="MAY">
-        </div>
+      <div class="form-group">
+        <label>Event Title</label>
+        <input type="text" id="evtTitle" placeholder="e.g., Annual Charity Gala">
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Day (16)</label>
-          <input type="text" id="evtDay" placeholder="16">
-        </div>
-        <div class="form-group">
-          <label>Event Date</label>
-          <input type="text" id="evtDate" placeholder="May 16, 2027">
-        </div>
+      
+      <div class="form-group">
+        <label>Select Date</label>
+        <input type="date" id="evtDatePicker">
       </div>
+
       <div class="form-row">
         <div class="form-group">
           <label>Start Time</label>
-          <input type="text" id="evtStartTime" placeholder="12:00 PM">
+          <input type="time" id="evtStartTime">
         </div>
         <div class="form-group">
           <label>End Time</label>
-          <input type="text" id="evtEndTime" placeholder="5:00 PM">
+          <input type="time" id="evtEndTime">
         </div>
       </div>
+
       <div class="form-group">
         <label>Location</label>
-        <input type="text" id="evtLocation" placeholder="Main Courtyard">
+        <input type="text" id="evtLocation" placeholder="e.g., Main Courtyard">
       </div>
+
       <div class="form-group">
         <label>Description</label>
-        <textarea id="evtDescription" placeholder="Event description"></textarea>
+        <textarea id="evtDescription" placeholder="Write a short description about the event..."></textarea>
       </div>
-      <div class="form-group">
-        <label>Registration Closed?</label>
-        <input type="checkbox" id="evtClosed"> Stop accepting registrations
+
+      <hr style="border:0; border-top:1px solid rgba(0,0,0,0.1); margin:20px 0;">
+
+      <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+        <input type="checkbox" id="evtFeatured" style="width:auto; height:auto;">
+        <label style="margin-bottom:0; cursor:pointer;" for="evtFeatured">⭐ Highlight as Featured Event</label>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Use External Registration?</label>
-          <input type="checkbox" id="evtExternal"> Redirect to external link
-        </div>
-        <div class="form-group">
-          <label>External Registration URL</label>
-          <input type="text" id="evtRedirectUrl" placeholder="https://forms.google.com/...">
-        </div>
+
+      <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+        <input type="checkbox" id="evtClosed" style="width:auto; height:auto;">
+        <label style="margin-bottom:0; cursor:pointer;" for="evtClosed">🚫 Close Registration (Stop accepting responses)</label>
       </div>
-      <div class="form-group">
-        <label>Featured Event?</label>
-        <input type="checkbox" id="evtFeatured"> Yes
+
+      <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+        <input type="checkbox" id="evtExternal" style="width:auto; height:auto;" onchange="document.getElementById('extUrlGroup').style.display = this.checked ? 'block' : 'none'">
+        <label style="margin-bottom:0; cursor:pointer;" for="evtExternal">🔗 Use External Registration Form (Google Forms/Typeform)</label>
       </div>
-      <button class="btn-save" onclick="saveEvent()">Save Event</button>
+
+      <div class="form-group" id="extUrlGroup" style="display:none; margin-left: 25px;">
+        <label>External Registration URL</label>
+        <input type="text" id="evtRedirectUrl" placeholder="https://forms.google.com/...">
+      </div>
+
+      <button class="btn-save" style="margin-top:20px;" onclick="saveEvent()">Save Event</button>
     `;
     document.getElementById('modal').classList.add('active');
   }
@@ -406,64 +360,71 @@
       const { data } = await client.from('events').select('*').eq('id', id).single();
       currentEdit = id;
       document.getElementById('modalTitle').textContent = 'Edit Event';
+      
+      // Parse database date format back to HTML calendar layout (YYYY-MM-DD)
+      let parsedDate = "";
+      if (data.event_date) {
+        const d = new Date(data.event_date);
+        if (!isNaN(d.getTime())) {
+          parsedDate = d.toISOString().split('T')[0];
+        }
+      }
+
       document.getElementById('modalBody').innerHTML = `
-        <div class="form-row">
-          <div class="form-group">
-            <label>Title</label>
-            <input type="text" id="evtTitle" value="${data.title}">
-          </div>
-          <div class="form-group">
-            <label>Month</label>
-            <input type="text" id="evtMonth" value="${data.month}">
-          </div>
+        <div class="form-group">
+          <label>Event Title</label>
+          <input type="text" id="evtTitle" value="${data.title || ''}">
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Day</label>
-            <input type="text" id="evtDay" value="${data.day}">
-          </div>
-          <div class="form-group">
-            <label>Event Date</label>
-            <input type="text" id="evtDate" value="${data.event_date}">
-          </div>
+        
+        <div class="form-group">
+          <label>Select Date</label>
+          <input type="date" id="evtDatePicker" value="${parsedDate}">
         </div>
+
         <div class="form-row">
           <div class="form-group">
             <label>Start Time</label>
-            <input type="text" id="evtStartTime" value="${data.start_time}">
+            <input type="text" id="evtStartTime" value="${data.start_time || ''}" placeholder="12:00 PM">
           </div>
           <div class="form-group">
             <label>End Time</label>
-            <input type="text" id="evtEndTime" value="${data.end_time}">
+            <input type="text" id="evtEndTime" value="${data.end_time || ''}" placeholder="5:00 PM">
           </div>
         </div>
+
         <div class="form-group">
           <label>Location</label>
-          <input type="text" id="evtLocation" value="${data.location}">
+          <input type="text" id="evtLocation" value="${data.location || ''}">
         </div>
+
         <div class="form-group">
           <label>Description</label>
-          <textarea id="evtDescription">${data.description}</textarea>
+          <textarea id="evtDescription">${data.description || ''}</textarea>
         </div>
-        <div class="form-group">
-          <label>Registration Closed?</label>
-          <input type="checkbox" id="evtClosed" ${data.registration_closed ? 'checked' : ''}> Stop accepting local registrations
+
+        <hr style="border:0; border-top:1px solid rgba(0,0,0,0.1); margin:20px 0;">
+
+        <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+          <input type="checkbox" id="evtFeatured" style="width:auto; height:auto;" ${data.is_featured ? 'checked' : ''}>
+          <label style="margin-bottom:0; cursor:pointer;" for="evtFeatured">⭐ Highlight as Featured Event</label>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Use External Registration?</label>
-            <input type="checkbox" id="evtExternal" ${data.use_external_link ? 'checked' : ''}> Redirect to external link
-          </div>
-          <div class="form-group">
-            <label>External Registration URL</label>
-            <input type="text" id="evtRedirectUrl" value="${data.redirect_url || ''}">
-          </div>
+
+        <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+          <input type="checkbox" id="evtClosed" style="width:auto; height:auto;" ${data.registration_closed ? 'checked' : ''}>
+          <label style="margin-bottom:0; cursor:pointer;" for="evtClosed">🚫 Close Registration (Stop accepting responses)</label>
         </div>
-        <div class="form-group">
-          <label>Featured Event?</label>
-          <input type="checkbox" id="evtFeatured" ${data.is_featured ? 'checked' : ''}> Yes
+
+        <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+          <input type="checkbox" id="evtExternal" style="width:auto; height:auto;" ${data.use_external_link ? 'checked' : ''} onchange="document.getElementById('extUrlGroup').style.display = this.checked ? 'block' : 'none'">
+          <label style="margin-bottom:0; cursor:pointer;" for="evtExternal">🔗 Use External Registration Form (Google Forms/Typeform)</label>
         </div>
-        <button class="btn-save" onclick="saveEvent()">Update Event</button>
+
+        <div class="form-group" id="extUrlGroup" style="display: ${data.use_external_link ? 'block' : 'none'}; margin-left: 25px;">
+          <label>External Registration URL</label>
+          <input type="text" id="evtRedirectUrl" value="${data.redirect_url || ''}">
+        </div>
+
+        <button class="btn-save" style="margin-top:20px;" onclick="saveEvent()">Update Event</button>
       `;
       document.getElementById('modal').classList.add('active');
     } catch (error) {
@@ -472,23 +433,29 @@
   }
 
   async function saveEvent() {
-    const title = document.getElementById('evtTitle').value;
-    const description = document.getElementById('evtDescription').value;
-    const event_date = document.getElementById('evtDate').value;
+    const title = document.getElementById('evtTitle').value.trim();
+    const description = document.getElementById('evtDescription').value.trim();
+    const datePickerValue = document.getElementById('evtDatePicker').value;
     const start_time = document.getElementById('evtStartTime').value;
     const end_time = document.getElementById('evtEndTime').value;
-    const location = document.getElementById('evtLocation').value;
-    const month = document.getElementById('evtMonth').value;
-    const day = document.getElementById('evtDay').value;
+    const location = document.getElementById('evtLocation').value.trim();
     const is_featured = document.getElementById('evtFeatured').checked;
     const registration_closed = document.getElementById('evtClosed').checked;
     const use_external_link = document.getElementById('evtExternal').checked;
-    const redirect_url = document.getElementById('evtRedirectUrl').value;
+    const redirect_url = document.getElementById('evtRedirectUrl').value.trim();
 
-    if (!title || !description || !event_date || !location) {
-      alert('Please fill all required fields');
+    if (!title || !description || !datePickerValue || !location) {
+      alert('Please fill all required fields (Title, Date, Location, and Description)');
       return;
     }
+
+    // Convert standard input date "YYYY-MM-DD" into Month, Day, and readable format
+    const dateObj = new Date(datePickerValue);
+    const monthsArray = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    
+    const month = monthsArray[dateObj.getMonth()].substring(0,3).toUpperCase(); // e.g., "MAY"
+    const day = String(dateObj.getDate()).padStart(2, '0'); // e.g., "16"
+    const event_date = `${monthsArray[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.getFullYear()}`; // e.g., "May 16, 2027"
 
     try {
       const eventData = { title, description, event_date, start_time, end_time, location, month, day, is_featured, registration_closed, use_external_link, redirect_url };
@@ -501,377 +468,6 @@
       loadEvents();
     } catch (error) {
       alert('Error saving: ' + error.message);
-    }
-  }
-
-  async function deleteEvent(id) {
-    if (confirm('Delete this event?')) {
-      try {
-        await client.from('events').delete().eq('id', id);
-        loadEvents();
-      } catch (error) {
-        alert('Error deleting: ' + error.message);
-      }
-    }
-  }
-
-  function openFormBuilder(eventId = null) {
-    currentFormFieldId = null;
-    currentFormEventId = eventId;
-    document.getElementById('formBuilderEvent').value = eventId || '';
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector('[data-section="registrationForms"]').classList.add('active');
-    document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
-    document.getElementById('registrationForms').classList.add('active');
-    loadFormBuilderEvents();
-    loadFormFields();
-  }
-
-  async function loadFormBuilderEvents() {
-    try {
-      const { data, error } = await client.from('events').select('id,title').order('created_at', { ascending: false });
-      if (error) throw error;
-      const select = document.getElementById('formBuilderEvent');
-      const selectedValue = select.value;
-      select.innerHTML = '<option value="">Select an event</option>';
-      data.forEach(evt => {
-        select.innerHTML += `<option value="${evt.id}" ${evt.id == selectedValue ? 'selected' : ''}>${evt.title}</option>`;
-      });
-      if (currentFormEventId && !selectedValue) {
-        select.value = currentFormEventId;
-      }
-    } catch (error) {
-      console.error('Error loading form builder events:', error);
-    }
-  }
-
-  async function loadFormFields() {
-    const selectedEventId = document.getElementById('formBuilderEvent').value;
-    if (!selectedEventId) {
-      document.getElementById('formFieldsList').innerHTML = '<div class="empty-state"><p>Select an event above to manage its registration form.</p></div>';
-      return;
-    }
-    currentFormEventId = selectedEventId;
-    try {
-      const { data, error } = await client
-        .from('registration_form_fields')
-        .select('*')
-        .eq('event_id', selectedEventId)
-        .order('sort_order', { ascending: true });
-
-      if (error) throw error;
-      let html = '';
-      if (data && data.length > 0) {
-        data.forEach((field, index) => {
-          const optionsText = field.options ? field.options : 'No options';
-          html += `
-            <div class="card">
-              <div class="card-content">
-                <h3>${field.label}</h3>
-                <div class="field-meta">
-                  <span class="field-badge">${field.type.replace('_', ' ')}</span>
-                  <span>${field.required ? 'Required' : 'Optional'}</span>
-                  <span>Order: ${field.sort_order ?? index}</span>
-                </div>
-                <small>${field.options ? 'Options: ' + optionsText : 'No options needed for this field type'}</small>
-              </div>
-              <div class="card-actions">
-                <button class="btn-sm btn-secondary btn-mini" onclick="moveFormField(${field.id}, 'up')">Move Up</button>
-                <button class="btn-sm btn-secondary btn-mini" onclick="moveFormField(${field.id}, 'down')">Move Down</button>
-                <button class="btn-sm btn-edit btn-mini" onclick="editField(${field.id})">Edit</button>
-                <button class="btn-sm btn-delete btn-mini" onclick="deleteFormField(${field.id})">Delete</button>
-              </div>
-            </div>
-          `;
-        });
-      } else {
-        html = '<div class="empty-state"><p>No fields configured for this event yet.</p></div>';
-      }
-      document.getElementById('formFieldsList').innerHTML = html;
-    } catch (error) {
-      if (error.code === 'PGRST205' || error.message?.includes('Could not find the table')) {
-        document.getElementById('formFieldsList').innerHTML = '<div class="empty-state"><p>The registration form schema is missing in Supabase. Run the SQL migration from SUPABASE_SETUP.md to create registration_form_fields.</p></div>';
-        return;
-      }
-      console.error('Error loading form fields:', error);
-    }
-  }
-
-  function renderFormPreview(fields) {
-    const preview = document.getElementById('formPreview');
-    if (!fields || fields.length === 0) {
-      preview.innerHTML = '<div class="empty-state"><p>No fields available for preview.</p></div>';
-      return;
-    }
-
-    let html = '';
-
-    fields.forEach(field => {
-      const requiredStar = field.required ? ' <span style="color:#c0392b">*</span>' : '';
-      const options = parseOptions(field.options);
-      let control = '';
-
-      switch (field.type) {
-        case 'short_text':
-          control = '<input type="text" placeholder="Short answer" disabled>';
-          break;
-        case 'paragraph':
-          control = '<textarea placeholder="Long answer" disabled></textarea>';
-          break;
-        case 'multiple_choice':
-          control = '<div class="preview-multichoice">' + options.map(opt => {
-            if (opt.toLowerCase().includes('other')) {
-              return `<label style="display:block;margin-bottom:4px;"><input type="radio" disabled> ${opt}</label><input type="text" placeholder="Please specify" disabled style="margin-left:20px;margin-bottom:8px;width:200px;display:none;">`;
-            }
-            return `<label style="display:block;margin-bottom:4px;"><input type="radio" disabled> ${opt}</label>`;
-          }).join('') + '</div>';
-          break;
-        case 'dropdown':
-          control = `<select disabled style="margin-bottom:8px;"><option>${options.join('</option><option>')}</option></select>`;
-          break;
-        case 'checkbox':
-          control = '<div class="preview-checkbox-group" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;">' + options.map(opt => {
-            if (opt.toLowerCase().includes('other')) {
-              return `<label style="display:flex;align-items:center;gap:6px;margin-bottom:8px;"><input type="checkbox" disabled> ${opt}</label><input type="text" placeholder="Please specify" disabled style="margin-left:26px;width:200px;display:none;">`;
-            }
-            return `<label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" disabled> ${opt}</label>`;
-          }).join('') + '</div>';
-          break;
-        default:
-          control = '<input type="text" placeholder="Answer" disabled>';
-      }
-
-      html += `
-        <div class="preview-field">
-          <label>${field.label}${requiredStar}</label>
-          ${control}
-          ${field.required ? '<small>Required question</small>' : '<small>Optional question</small>'}
-        </div>
-      `;
-    });
-
-    preview.innerHTML = html;
-  }
-
-  function parseOptions(options) {
-    return options ? options.split(',').map(opt => opt.trim()).filter(Boolean) : [];
-  }
-
-  function toggleFieldOptions() {
-    const type = document.getElementById('fieldType')?.value;
-    const optionsGroup = document.getElementById('fieldOptionsGroup');
-    if (!optionsGroup) return;
-    if (['multiple_choice', 'dropdown', 'checkbox'].includes(type)) {
-      optionsGroup.style.display = 'block';
-    } else {
-      optionsGroup.style.display = 'none';
-    }
-  }
-
-  function previewForm() {
-    const eventId = currentFormEventId || document.getElementById('formBuilderEvent').value;
-    if (!eventId) {
-      alert('Please select an event first to preview the form.');
-      return;
-    }
-    const base = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
-    window.open(`${base}register.html?event_id=${eventId}`, '_blank');
-  }
-
-  async function moveFormField(fieldId, direction) {
-    const eventId = currentFormEventId || document.getElementById('formBuilderEvent').value;
-    if (!eventId) return;
-
-    const { data, error } = await client
-      .from('registration_form_fields')
-      .select('*')
-      .eq('event_id', eventId)
-      .order('sort_order', { ascending: true });
-
-    if (error) {
-      console.error('Error loading field order:', error);
-      return;
-    }
-
-    const index = data.findIndex(field => field.id === fieldId);
-    if (index === -1) return;
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= data.length) return;
-
-    const current = data[index];
-    const target = data[targetIndex];
-
-    try {
-      await client.from('registration_form_fields').update({ sort_order: target.sort_order }).eq('id', current.id);
-      await client.from('registration_form_fields').update({ sort_order: current.sort_order }).eq('id', target.id);
-      loadFormFields();
-    } catch (updateError) {
-      console.error('Error moving field:', updateError);
-    }
-  }
-
-  function openAddField(defaultType = 'short_text') {
-    const eventId = currentFormEventId || document.getElementById('formBuilderEvent').value;
-    if (!eventId) {
-      alert('Please select an event before adding fields.');
-      return;
-    }
-    currentFormFieldId = null;
-    document.getElementById('modalTitle').textContent = 'Add Registration Field';
-    document.getElementById('modalBody').innerHTML = `
-      <div class="form-group">
-        <label>Field Label</label>
-        <input type="text" id="fieldLabel" placeholder="e.g. Favorite color">
-      </div>
-      <div class="form-group">
-        <label>Field Type</label>
-        <select id="fieldType" onchange="toggleFieldOptions()">
-          <option value="short_text" ${defaultType === 'short_text' ? 'selected' : ''}>Short answer</option>
-          <option value="paragraph" ${defaultType === 'paragraph' ? 'selected' : ''}>Paragraph</option>
-          <option value="multiple_choice" ${defaultType === 'multiple_choice' ? 'selected' : ''}>Multiple choice</option>
-          <option value="dropdown" ${defaultType === 'dropdown' ? 'selected' : ''}>Dropdown</option>
-          <option value="checkbox" ${defaultType === 'checkbox' ? 'selected' : ''}>Checkbox</option>
-        </select>
-      </div>
-      <div class="form-group" id="fieldOptionsGroup">
-        <label>Options</label>
-        <div id="optionsList"></div>
-        <button type="button" class="btn-secondary btn-mini" onclick="addOption()">+ Add Option</button>
-        <small style="color: var(--gray-text);">Add options for dropdown, multiple choice, or checkbox fields.</small>
-      </div>
-      <div class="form-group">
-        <label>Required</label>
-        <select id="fieldRequired">
-          <option value="true">Yes</option>
-          <option value="false">No</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Sort Order</label>
-        <input type="number" id="fieldOrder" value="0" min="0">
-      </div>
-      <button class="btn-save" onclick="saveFormField()">Save Field</button>
-    `;
-    document.getElementById('modal').classList.add('active');
-    toggleFieldOptions();
-    populateOptions('');
-  }
-
-  async function editField(id) {
-    try {
-      const { data, error } = await client.from('registration_form_fields').select('*').eq('id', id).single();
-      if (error) throw error;
-      currentFormFieldId = id;
-      currentFormEventId = data.event_id;
-      document.getElementById('modalTitle').textContent = 'Edit Registration Field';
-      document.getElementById('modalBody').innerHTML = `
-        <div class="form-group">
-          <label>Field Label</label>
-          <input type="text" id="fieldLabel" value="${data.label}">
-        </div>
-        <div class="form-group">
-          <label>Field Type</label>
-          <select id="fieldType" onchange="toggleFieldOptions()">
-            <option value="short_text" ${data.type === 'short_text' ? 'selected' : ''}>Short answer</option>
-            <option value="paragraph" ${data.type === 'paragraph' ? 'selected' : ''}>Paragraph</option>
-            <option value="multiple_choice" ${data.type === 'multiple_choice' ? 'selected' : ''}>Multiple choice</option>
-            <option value="dropdown" ${data.type === 'dropdown' ? 'selected' : ''}>Dropdown</option>
-            <option value="checkbox" ${data.type === 'checkbox' ? 'selected' : ''}>Checkbox</option>
-          </select>
-        </div>
-        <div class="form-group" id="fieldOptionsGroup">
-          <label>Options</label>
-          <div id="optionsList"></div>
-          <button type="button" class="btn-secondary btn-mini" onclick="addOption()">+ Add Option</button>
-          <small style="color: var(--gray-text);">Add options for dropdown, multiple choice, or checkbox fields.</small>
-        </div>
-        <div class="form-group">
-          <label>Required</label>
-          <select id="fieldRequired">
-            <option value="true" ${data.required ? 'selected' : ''}>Yes</option>
-            <option value="false" ${!data.required ? 'selected' : ''}>No</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Sort Order</label>
-          <input type="number" id="fieldOrder" value="${data.sort_order || 0}" min="0">
-        </div>
-        <button class="btn-save" onclick="saveFormField()">Update Field</button>
-      `;
-      document.getElementById('modal').classList.add('active');
-      toggleFieldOptions();
-      populateOptions(data.options);
-    } catch (error) {
-      alert('Error loading field: ' + error.message);
-    }
-  }
-
-  async function saveFormField() {
-    const event_id = currentFormEventId || document.getElementById('formBuilderEvent').value;
-    const label = document.getElementById('fieldLabel').value.trim();
-    const type = document.getElementById('fieldType').value;
-    const required = document.getElementById('fieldRequired').value === 'true';
-    const sort_order = parseInt(document.getElementById('fieldOrder').value, 10) || 0;
-
-    // Collect options from dynamic list
-    const optionInputs = document.querySelectorAll('#optionsList input');
-    const options = Array.from(optionInputs).map(input => input.value.trim()).filter(val => val).join(', ');
-
-    if (!event_id || !label || !type) {
-      alert('Please fill all required field settings');
-      return;
-    }
-
-    const fieldData = { event_id: parseInt(event_id, 10), label, type, options, required, sort_order };
-    try {
-      if (currentFormFieldId) {
-        await client.from('registration_form_fields').update(fieldData).eq('id', currentFormFieldId);
-      } else {
-        await client.from('registration_form_fields').insert([fieldData]);
-      }
-      closeModal();
-      loadFormBuilderEvents();
-      loadFormFields();
-    } catch (error) {
-      if (error.code === 'PGRST205' || error.message?.includes('Could not find the table')) {
-        alert('The registration form table is not available in Supabase. Create the registration_form_fields table first.');
-        return;
-      }
-      alert('Error saving field: ' + error.message);
-    }
-  }
-
-  async function deleteFormField(id) {
-    if (!confirm('Delete this registration field?')) return;
-    try {
-      await client.from('registration_form_fields').delete().eq('id', id);
-      loadFormFields();
-    } catch (error) {
-      alert('Error deleting field: ' + error.message);
-    }
-  }
-
-  function addOption(value = '') {
-    const optionsList = document.getElementById('optionsList');
-    const optionDiv = document.createElement('div');
-    optionDiv.className = 'option-item';
-    optionDiv.innerHTML = `
-      <input type="text" placeholder="Option text" value="${value}" style="flex: 1; margin-right: 10px;">
-      <button type="button" class="btn-sm btn-delete" onclick="removeOption(this)">Remove</button>
-    `;
-    optionsList.appendChild(optionDiv);
-  }
-
-  function removeOption(button) {
-    button.parentElement.remove();
-  }
-
-  function populateOptions(optionsString) {
-    const optionsList = document.getElementById('optionsList');
-    optionsList.innerHTML = '';
-    if (optionsString) {
-      const options = optionsString.split(',').map(opt => opt.trim()).filter(opt => opt);
-      options.forEach(option => addOption(option));
     }
   }
 
