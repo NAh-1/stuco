@@ -1368,25 +1368,40 @@ function populateOptions(optionsString) {
   }
 
   async function deleteContact(id) {
-  if (confirm('Are you sure you want to permanently delete this submission?')) {
+  if (confirm('Delete this submission?')) {
     try {
-      // 🌟 FIXED: Destructure and check the 'error' object returned by Supabase
-      const { error } = await client
+      // 🌟 Request a count update back from Supabase to see if it actually deleted anything
+      const { error, count } = await client
         .from('contact_submissions')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
 
-      // Successfully deleted! Refresh the UI list
-      loadContact();
+      // Find the card element on the page and remove it from view immediately
+      const deleteButton = document.activeElement; // The button you just clicked
+      const cardElement = deleteButton.closest('.card');
       
+      if (cardElement) {
+        cardElement.style.transition = 'all 0.3s ease';
+        cardElement.style.opacity = '0';
+        cardElement.style.transform = 'scale(0.9)';
+        
+        setTimeout(() => {
+          cardElement.remove();
+          // Double check if the list is completely empty now to show the empty state
+          const remainingCards = document.querySelectorAll('#contactList .card');
+          if (remainingCards.length === 0) {
+            document.getElementById('contactList').innerHTML = '<div class="empty-state"><p>No submissions yet</p></div>';
+          }
+        }, 300);
+      }
+
     } catch (error) {
-      console.error('Database deletion failed:', error);
+      console.error('Error handling delete:', error);
       alert('Error deleting: ' + error.message);
     }
   }
-}
 
   // ===== SURVEY =====
   async function copyRegistrationLink(eventId) {
