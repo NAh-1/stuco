@@ -9,7 +9,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <link rel="stylesheet" href="admin-style.css">
-
 </head>
 <body>
 
@@ -37,8 +36,6 @@
       <li><button class="nav-btn active" data-section="announcements">Announcements</button></li>
       <li><button class="nav-btn" data-section="events">Events</button></li>
       <li><button class="nav-btn" data-section="initiatives">Initiatives</button></li>
-      <li><button class="nav-btn" data-section="registrations">Registrations</button></li>
-      <li><button class="nav-btn" data-section="registrationForms">Form Builder</button></li>
       <li><button class="nav-btn" data-section="contact">Contact Submissions</button></li>
       <li><button class="nav-btn" data-section="survey">Survey Responses</button></li>
       <li><button class="logout-btn" onclick="handleLogout()">Logout</button></li>
@@ -63,88 +60,12 @@
       <div id="eventsList"></div>
     </section>
 
-    <section class="content-section" id="registrationForms">
-      <div class="header">
-        <div>
-          <h2>Registration Form Builder</h2>
-          <p class="section-note">Create event forms with a clear field list and preview the student form on a separate page.</p>
-        </div>
-        <div style="display: flex; gap: 12px; align-items: center;">
-          <button class="btn-secondary btn-mini" onclick="previewForm()">Preview Form</button>
-          <button class="add-btn" onclick="openAddField()">+ Add Field</button>
-        </div>
-      </div>
-      <div class="quick-actions">
-        <button class="btn-secondary btn-mini" onclick="openAddField('short_text')">Short answer</button>
-        <button class="btn-secondary btn-mini" onclick="openAddField('paragraph')">Paragraph</button>
-        <button class="btn-secondary btn-mini" onclick="openAddField('multiple_choice')">Multiple choice</button>
-        <button class="btn-secondary btn-mini" onclick="openAddField('dropdown')">Dropdown</button>
-        <button class="btn-secondary btn-mini" onclick="openAddField('checkbox')">Checkbox</button>
-      </div>
-      <div class="form-row" style="margin-bottom: 20px;">
-        <div class="form-group">
-          <label>Event</label>
-          <select id="formBuilderEvent" onchange="loadFormFields()">
-            <option value="">Select an event</option>
-          </select>
-        </div>
-      </div>
-      <div class="static-fields-panel">
-        <div class="builder-header">
-          <h3>Default registration fields</h3>
-          <p>These fields are always included in every event registration form.</p>
-        </div>
-        <div class="card">
-          <div class="card-content">
-            <h3>Student Info</h3>
-            <div class="field-meta">
-              <span class="field-badge">First Name</span>
-              <span class="field-badge">Last Name</span>
-              <span class="field-badge">Grade</span>
-              <span class="field-badge">Email</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="form-builder-grid">
-        <div class="builder-panel">
-          <div class="builder-header">
-            <h3>Form fields</h3>
-            <p>Use the controls below to manage and reorder the questions shown to students.</p>
-          </div>
-          <div id="formFieldsList"></div>
-        </div>
-      </div>
-    </section>
-
     <section class="content-section" id="initiatives">
       <div class="header">
         <h2>Initiatives</h2>
         <button class="add-btn" onclick="openAddInitiative()">+ New Initiative</button>
       </div>
       <div id="initiativesList"></div>
-    </section>
-
-    <section class="content-section" id="registrations">
-      <div class="header">
-        <h2>Event Registrations</h2>
-        <div style="display: flex; gap: 12px; align-items: center;">
-          <button class="btn-secondary btn-mini" onclick="exportToExcel()">Export Excel</button>
-          <button class="add-btn" onclick="openManualRegistrationModal()">+ Add Registration</button>
-        </div>
-      </div>
-      
-      <div class="form-row" style="margin-bottom: 20px; background: rgba(0,0,0,0.02); padding: 15px; border-radius: 8px;">
-        <div class="form-group" style="margin-bottom: 0;">
-          <label for="regFilterEvent">Filter Entries By Active Target Event Log Array:</label>
-          <select id="regFilterEvent" onchange="filterRegistrations()" style="width: 100%; max-width: 400px; padding: 10px; border-radius: 6px; border: 1.5px solid rgba(0,0,0,0.15);">
-            <option value="">Show All Registered Events</option>
-          </select>
-        </div>
-      </div>
-
-      <div id="registrationsList">
-        </div>
     </section>
 
     <section class="content-section" id="contact">
