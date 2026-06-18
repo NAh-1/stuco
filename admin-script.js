@@ -490,10 +490,13 @@ async function saveEvent() {
   const start_time = document.getElementById('evtStartTime').value || '';
   const end_time = document.getElementById('evtEndTime').value || '';
   const location = document.getElementById('evtLocation').value.trim() || '';
-  const is_featured = document.getElementById('evtFeatured').checked;
   const registration_closed = document.getElementById('evtClosed').checked;
   const use_external_link = document.getElementById('evtExternal').checked;
   const redirect_url = document.getElementById('evtRedirectUrl').value.trim();
+
+  // If editing an existing event, read its checkbox status. 
+  // If it's a NEW event, we will force it to true automatically below.
+  let is_featured = document.getElementById('evtFeatured').checked;
 
   if (!title || !description || !datePickerValue) {
     alert('Please fill in all required fields marked with a red asterisk (*)');
@@ -508,12 +511,26 @@ async function saveEvent() {
   const event_date = `${monthsArray[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.getFullYear()}`;
 
   try {
+    // AUTOMATIC FEATURED LOGIC FOR NEW EVENTS
+    if (!currentEdit) {
+      // 1. Remove the featured status from all existing events first
+      await client
+        .from('events')
+        .update({ is_featured: false })
+        .eq('is_featured', true);
+        
+      // 2. Force this new event to be featured
+      is_featured = true;
+    }
+
     const eventData = { title, description, event_date, start_time, end_time, location, month, day, is_featured, registration_closed, use_external_link, redirect_url };
+    
     if (currentEdit) {
       await client.from('events').update(eventData).eq('id', currentEdit);
     } else {
       await client.from('events').insert([eventData]);
     }
+    
     closeModal();
     
     if (typeof loadEvents === "function") {
@@ -521,17 +538,6 @@ async function saveEvent() {
     }
   } catch (error) {
     alert('Error saving: ' + error.message);
-  }
-}
-
-async function deleteEvent(id) {
-  if (confirm('Delete this event?')) {
-    try {
-      await client.from('events').delete().eq('id', id);
-      loadEvents();
-    } catch (error) {
-      alert('Error deleting: ' + error.message);
-    }
   }
 }
 
