@@ -488,6 +488,9 @@ async function saveEvent() {
   const start_time = document.getElementById('evtStartTime').value || '';
   const end_time = document.getElementById('evtEndTime').value || '';
   const location = document.getElementById('evtLocation').value.trim() || '';
+  
+  // Grab checkbox values from modal UI layout properties
+  const is_featured = document.getElementById('evtFeatured').checked; // 🌟 FIXED: Now reading your checkbox value!
   const registration_closed = document.getElementById('evtClosed').checked;
   const use_external_link = document.getElementById('evtExternal').checked;
   const redirect_url = document.getElementById('evtRedirectUrl').value.trim();
@@ -505,14 +508,25 @@ async function saveEvent() {
   const event_date = `${monthsArray[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.getFullYear()}`;
 
   try {
-    let is_featured = false;
-    // Set latest event as the featured one automatically
-    if (!currentEdit) {
+    // 🌟 FIXED: If this event is being saved as featured, turn off featured status for all other events first
+    if (is_featured) {
       await client.from('events').update({ is_featured: false }).eq('is_featured', true);
-      is_featured = true;
     }
 
-    const eventData = { title, description, event_date, start_time, end_time, location, month, day, is_featured, registration_closed, use_external_link, redirect_url };
+    const eventData = { 
+      title, 
+      description, 
+      event_date, 
+      start_time, 
+      end_time, 
+      location, 
+      month, 
+      day, 
+      is_featured, // 🌟 FIXED: Stores the actual checked state true/false
+      registration_closed, 
+      use_external_link, 
+      redirect_url 
+    };
     
     if (currentEdit) {
       await client.from('events').update(eventData).eq('id', currentEdit);
