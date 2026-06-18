@@ -400,57 +400,113 @@
   .event-info h4 { font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
   .event-info p { font-size: 13px; color: var(--gray-text); }
 
-  /* ───── INITIATIVES ───── */
-  #initiatives { background: var(--cream); }
-  .initiatives-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 28px;
-    margin-top: 60px;
-  }
-  .initiative-card {
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid rgba(0,0,0,0.07);
-    background: var(--white);
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-  .initiative-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 20px 60px rgba(7,17,43,0.1);
-  }
-  .initiative-top {
-    height: 180px;
-    display: flex; align-items: flex-end;
-    padding: 20px;
-    position: relative;
-  }
-  .initiative-top.t1 { background: linear-gradient(135deg, #0e1e47, #1a3a6b); }
-  .initiative-top.t2 { background: linear-gradient(135deg, #1a0a00, #5c2a00); }
-  .initiative-top.t3 { background: linear-gradient(135deg, #0a1f0a, #1a4a1a); }
-  .initiative-top.t4 { background: linear-gradient(135deg, #1a0a1a, #4a1a6b); }
-  .initiative-top.t5 { background: linear-gradient(135deg, #1a1500, #4a3b00); }
-  .initiative-top.t6 { background: linear-gradient(135deg, #1a0a0a, #4a1a1a); }
-  .initiative-top h3 {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 26px; letter-spacing: 1px;
-    color: var(--white); line-height: 1;
-  }
-  .initiative-body { padding: 20px; }
-  .initiative-body p { font-size: 13px; color: var(--gray-text); line-height: 1.6; margin-bottom: 16px; }
-  .initiative-progress {
-    display: flex; align-items: center; gap: 10px;
-    font-size: 12px;
-  }
-  .progress-bar {
-    flex: 1; height: 4px;
-    background: rgba(0,0,0,0.07); border-radius: 2px;
-    overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%; background: var(--gold); border-radius: 2px;
-  }
-  .progress-pct { font-weight: 700; color: var(--navy); font-size: 13px; }
+/* ───── INITIATIVES ───── */
+#initiatives { 
+  background: var(--cream); 
+  padding: 60px 0; /* Ensures consistent vertical rhythm */
+}
+
+.initiatives-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* 🌟 RESPONSIVE: Wraps automatically on mobile! */
+  gap: 28px;
+  margin-top: 40px;
+}
+
+.initiative-card {
+  border-radius: 12px; /* Slightly softer corners */
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: var(--white);
+  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.3s ease; /* 🌟 Ultra-smooth motion graphic curve */
+  display: flex;
+  flex-direction: column;
+}
+
+.initiative-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 22px 40px rgba(7, 17, 43, 0.08);
+}
+
+.initiative-top {
+  height: 160px; /* Marginally tighter aspect ratio focus */
+  display: flex; 
+  align-items: flex-end;
+  padding: 24px;
+  position: relative;
+}
+
+/* Enhanced Gradient Palettes with richer transitions */
+.initiative-top.t1 { background: linear-gradient(135deg, #0e1e47, #1d3363); }
+.initiative-top.t2 { background: linear-gradient(135deg, #241205, #572d0b); }
+.initiative-top.t3 { background: linear-gradient(135deg, #0a2110, #1b4d24); }
+.initiative-top.t4 { background: linear-gradient(135deg, #1f0b24, #481d61); }
+.initiative-top.t5 { background: linear-gradient(135deg, #241d05, #524209); }
+.initiative-top.t6 { background: linear-gradient(135deg, #240a0a, #541e1e); }
+
+.initiative-top h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px; 
+  letter-spacing: 1.2px;
+  color: var(--white); 
+  line-height: 1.1;
+  margin: 0;
+  z-index: 2;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* 🌟 Ensures title readability over light gradient elements */
+}
+
+/* Optional styling tweak for the emoji icon we added earlier */
+.initiative-top h3 .init-emoji {
+  font-size: 24px;
+  vertical-align: middle;
+  margin-right: 6px;
+  display: inline-block;
+}
+
+.initiative-body { 
+  padding: 24px; 
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* Pushes the progress bar to line up perfectly across card rows */
+}
+
+.initiative-body p { 
+  font-size: 14px; 
+  color: var(--gray-text); 
+  line-height: 1.6; 
+  margin-bottom: 24px;
+  flex-grow: 1; 
+}
+
+.initiative-progress {
+  display: flex; 
+  flex-direction: column; /* 🌟 STACKED LAYOUT: Looks significantly more modern than side-by-side */
+  gap: 8px;
+  margin-top: auto; /* Locks down to the bottom of the card */
+}
+
+.progress-bar {
+  width: 100%; 
+  height: 6px; /* Slightly thicker track for easier scanning */
+  background: rgba(0, 0, 0, 0.05); 
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%; 
+  background: var(--gold, #d4af37); 
+  border-radius: 4px;
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); /* 🌟 Animates growth cleanly when the page dynamically loads */
+}
+
+.progress-pct { 
+  font-weight: 700; 
+  color: var(--navy); 
+  font-size: 12px; 
+  align-self: flex-end; /* Places percentage beautifully aligned above or below the bar */
+  letter-spacing: 0.5px;
+}
 
   /* ───── ANNOUNCEMENTS ───── */
   #announcements { background: var(--navy); }

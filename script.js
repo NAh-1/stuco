@@ -173,16 +173,35 @@ async function loadInitiatives() {
     if (data && data.length > 0) {
       let html = '';
       data.forEach((init, idx) => {
+        // Fallback to t1-t6 rotation if theme is empty
         const theme = init.theme || 't' + ((idx % 6) + 1);
-        const title = init.title.replace(/\n/g, '<br>');
+        
+        // Clean text formatting
+        const titleText = init.title ? init.title.replace(/\n/g, '<br>') : 'Untitled Initiative';
+        
+        // 🌟 FIX 1: Add emoji display logic if an emoji exists
+        const displayEmoji = init.emoji ? `<span class="init-emoji">${init.emoji}</span> ` : '';
+        
+        // 🌟 FIX 2: Safe fallback for empty description fields
+        const displayDesc = init.description && init.description.trim() !== "" 
+          ? init.description 
+          : "No description details provided.";
+
+        // Safe fallback for progress percentages
+        const progressVal = init.progress_percentage ?? 0;
+
         html += `
           <div class="initiative-card reveal">
-            <div class="initiative-top ${theme}"><h3>${title}</h3></div>
+            <div class="initiative-top ${theme}">
+              <h3>${displayEmoji}${titleText}</h3>
+            </div>
             <div class="initiative-body">
-              <p>${init.description}</p>
+              <p>${displayDesc}</p>
               <div class="initiative-progress">
-                <div class="progress-bar"><div class="progress-fill" style="width:${init.progress_percentage}%"></div></div>
-                <span class="progress-pct">${init.progress_percentage}%</span>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width:${progressVal}%"></div>
+                </div>
+                <span class="progress-pct">${progressVal}%</span>
               </div>
             </div>
           </div>
@@ -192,6 +211,9 @@ async function loadInitiatives() {
       
       // Re-observe for animations
       document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    } else {
+      // Optional: Add an empty state handling on the public side too if nothing is active
+      document.getElementById('initiativesGrid').innerHTML = '<div class="empty-state"><p>Check back later for ongoing student council initiatives!</p></div>';
     }
   } catch (error) {
     console.error('Error loading initiatives:', error);
