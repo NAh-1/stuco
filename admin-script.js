@@ -166,120 +166,150 @@
   }
 
   // ===== ANNOUNCEMENTS =====
-  async function loadAnnouncements() {
-    try {
-      const { data, error } = await client
-        .from('announcements')
-        .select('*')
-        .order('created_at', { ascending: false });
+async function loadAnnouncements() {
+  try {
+    const { data, error } = await client
+      .from('announcements')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-      if (error) throw error;
+    if (error) throw error;
 
-      let html = '';
-      if (data && data.length > 0) {
-        data.forEach(ann => {
-          html += `
-            <div class="card">
-              <div class="card-content">
-                <h3>${ann.title}</h3>
-                <p>${ann.content.substring(0, 100)}...</p>
-                <small>${ann.date}</small>
-                ${ann.redirect_url ? `<div style="font-size: 11px; color: var(--gold); margin-top: 5px;">Redirect: ${ann.redirect_url}</div>` : ''}
-              </div>
-              <div class="card-actions">
-                <button class="btn-sm btn-edit" onclick="editAnnouncement(${ann.id})">Edit</button>
-                <button class="btn-sm btn-delete" onclick="deleteAnnouncement(${ann.id})">Delete</button>
-              </div>
+    let html = '';
+    if (data && data.length > 0) {
+      data.forEach(ann => {
+        // Fallback text if content is left empty
+        const shortContent = ann.content ? `${ann.content.substring(0, 100)}...` : 'No description provided.';
+        
+        html += `
+          <div class="card">
+            <div class="card-content">
+              <h3>${ann.title}</h3>
+              <p>${shortContent}</p>
+              <small>${ann.date || ''}</small>
+              ${ann.redirect_url ? `<div style="font-size: 11px; color: var(--gold); margin-top: 5px;">Redirect: ${ann.redirect_url}</div>` : ''}
             </div>
-          `;
-        });
-      } else {
-        html = '<div class="empty-state"><p>No announcements yet</p></div>';
-      }
-      document.getElementById('announcementsList').innerHTML = html;
-    } catch (error) {
-      console.error('Error loading announcements:', error);
+            <div class="card-actions">
+              <button class="btn-sm btn-edit" onclick="editAnnouncement(${ann.id})">Edit</button>
+              <button class="btn-sm btn-delete" onclick="deleteAnnouncement(${ann.id})">Delete</button>
+            </div>
+          </div>
+        `;
+      });
+    } else {
+      html = '<div class="empty-state"><p>No announcements yet</p></div>';
     }
+    document.getElementById('announcementsList').innerHTML = html;
+  } catch (error) {
+    console.error('Error loading announcements:', error);
   }
+}
 
-  function openAddAnnouncement() {
-    currentEdit = null;
-    document.getElementById('modalTitle').textContent = 'New Announcement';
+function openAddAnnouncement() {
+  currentEdit = null;
+  document.getElementById('modalTitle').textContent = 'New Announcement';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="form-group">
+      <label>Title <span style="color: red;">*</span></label>
+      <input type="text" id="annTitle" placeholder="Announcement title">
+    </div>
+    <div class="form-group">
+      <label>Content (Optional)</label>
+      <textarea id="annContent" placeholder="Announcement content"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Select Date <span style="color: red;">*</span></label>
+      <input type="date" id="annDatePicker">
+    </div>
+    <div class="form-group">
+      <label>Redirect URL (Optional)</label>
+      <input type="text" id="annRedirectUrl" placeholder="https://example.com/news-link">
+    </div>
+    <button class="btn-save" onclick="saveAnnouncement()">Save Announcement</button>
+  `;
+  document.getElementById('modal').classList.add('active');
+}
+
+async function editAnnouncement(id) {
+  try {
+    const { data } = await client.from('announcements').select('*').eq('id', id).single();
+    currentEdit = id;
+    
+    // Reverse parse string date back to standard layout input form (YYYY-MM-DD)
+    let inputDateVal = "";
+    if (data.date) {
+      const d = new Date(data.date);
+      if (!isNaN(d.getTime())) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        inputDateVal = `${year}-${month}-${day}`;
+      }
+    }
+
+    document.getElementById('modalTitle').textContent = 'Edit Announcement';
     document.getElementById('modalBody').innerHTML = `
       <div class="form-group">
-        <label>Title</label>
-        <input type="text" id="annTitle" placeholder="Announcement title">
+        <label>Title <span style="color: red;">*</span></label>
+        <input type="text" id="annTitle" value="${data.title || ''}">
       </div>
       <div class="form-group">
-        <label>Content</label>
-        <textarea id="annContent" placeholder="Announcement content"></textarea>
+        <label>Content (Optional)</label>
+        <textarea id="annContent">${data.content || ''}</textarea>
       </div>
       <div class="form-group">
-        <label>Date</label>
-        <input type="text" id="annDate" placeholder="e.g., September 5, 2026">
+        <label>Select Date <span style="color: red;">*</span></label>
+        <input type="date" id="annDatePicker" value="${inputDateVal}">
       </div>
       <div class="form-group">
         <label>Redirect URL (Optional)</label>
-        <input type="text" id="annRedirectUrl" placeholder="https://example.com/news-link">
+        <input type="text" id="annRedirectUrl" value="${data.redirect_url || ''}">
       </div>
-      <button class="btn-save" onclick="saveAnnouncement()">Save Announcement</button>
+      <button class="btn-save" onclick="saveAnnouncement()">Update Announcement</button>
     `;
     document.getElementById('modal').classList.add('active');
+  } catch (error) {
+    alert('Error loading announcement: ' + error.message);
+  }
+}
+
+async function saveAnnouncement() {
+  const title = document.getElementById('annTitle').value.trim();
+  const content = document.getElementById('annContent').value.trim();
+  const datePickerValue = document.getElementById('annDatePicker').value;
+  const redirect_url = document.getElementById('annRedirectUrl').value.trim();
+
+  // ONLY enforce the title and date picker fields as mandatory now
+  if (!title || !datePickerValue) {
+    alert('Please complete all fields marked with a red asterisk (*)');
+    return;
   }
 
-  async function editAnnouncement(id) {
-    try {
-      const { data } = await client.from('announcements').select('*').eq('id', id).single();
-      currentEdit = id;
-      document.getElementById('modalTitle').textContent = 'Edit Announcement';
-      document.getElementById('modalBody').innerHTML = `
-        <div class="form-group">
-          <label>Title</label>
-          <input type="text" id="annTitle" value="${data.title}">
-        </div>
-        <div class="form-group">
-          <label>Content</label>
-          <textarea id="annContent">${data.content}</textarea>
-        </div>
-        <div class="form-group">
-          <label>Date</label>
-          <input type="text" id="annDate" value="${data.date}">
-        </div>
-        <div class="form-group">
-          <label>Redirect URL (Optional)</label>
-          <input type="text" id="annRedirectUrl" value="${data.redirect_url || ''}">
-        </div>
-        <button class="btn-save" onclick="saveAnnouncement()">Update Announcement</button>
-      `;
-      document.getElementById('modal').classList.add('active');
-    } catch (error) {
-      alert('Error loading announcement: ' + error.message);
+  // Auto-format the date picker value into standard text string layout
+  const dateObj = new Date(datePickerValue);
+  const monthsArray = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const formattedDate = `${monthsArray[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.getFullYear()}`;
+
+  try {
+    const payload = { 
+      title, 
+      content, 
+      date: formattedDate, 
+      redirect_url: redirect_url || null 
+    };
+
+    if (currentEdit) {
+      await client.from('announcements').update(payload).eq('id', currentEdit);
+    } else {
+      await client.from('announcements').insert([payload]);
     }
+    
+    closeModal();
+    loadAnnouncements();
+  } catch (error) {
+    alert('Error saving: ' + error.message);
   }
-
-  async function saveAnnouncement() {
-    const title = document.getElementById('annTitle').value;
-    const content = document.getElementById('annContent').value;
-    const date = document.getElementById('annDate').value;
-    const redirect_url = document.getElementById('annRedirectUrl').value;
-
-    if (!title || !content || !date) {
-      alert('Please fill all fields');
-      return;
-    }
-
-    try {
-      if (currentEdit) {
-        await client.from('announcements').update({ title, content, date, redirect_url }).eq('id', currentEdit);
-      } else {
-        await client.from('announcements').insert([{ title, content, date, redirect_url }]);
-      }
-      closeModal();
-      loadAnnouncements();
-    } catch (error) {
-      alert('Error saving: ' + error.message);
-    }
-  }
+}
 
   async function deleteAnnouncement(id) {
     if (confirm('Delete this announcement?')) {
