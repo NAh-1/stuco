@@ -1138,12 +1138,13 @@ async function saveInitiative() {
   }
 
   try {
+    // 🌟 FIXED: Use fallback empty strings ("") instead of null to bypass the database constraint
     const dataPayload = { 
       title, 
-      description: description || null, 
-      emoji: emoji || null, 
+      description: description || "", // Falls back to empty text instead of null
+      emoji: emoji || "",            // Falls back to empty text instead of null
       progress_percentage, 
-      theme: theme || null 
+      theme: theme || ""             // Falls back to empty text instead of null
     };
 
     let error;
