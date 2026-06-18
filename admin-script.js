@@ -310,7 +310,6 @@ async function loadEvents() {
           ? '<span class="field-badge" style="background:#fce8e6; color:#9f2a26;">Closed</span>' 
           : '<span class="field-badge" style="background:#eaf7eb; color:#21703a;">Open</span>';
         
-        // Handle fallback text safely if location or times are empty strings
         const locText = evt.location ? evt.location : 'No location specified';
         const timeText = (evt.start_time || evt.end_time) 
           ? `${evt.start_time || ''} – ${evt.end_time || ''}`.replace(/^ – | – $/g, '')
@@ -322,22 +321,21 @@ async function loadEvents() {
               <h3>${evt.title}</h3>
               <div style="margin-bottom: 8px;">${statusBadge}</div>
               <p>${evt.description.substring(0, 80)}...</p>
-              <small>${evt.event_date} @ ${locText} (${timeText})</small>
+              <small>📅 ${evt.event_date} @ 📍 ${locText} (${timeText})</small>
               <div style="margin-top:10px; font-size:12px; color:rgba(0,0,0,0.6);">
-                Registration link: <a href="${registrationLink}" target="_blank">Open form</a>
+                Public Link: <a href="${registrationLink}" target="_blank">Open Event Page</a>
               </div>
             </div>
             <div class="card-actions">
-              <button class="btn-sm btn-edit" onclick="editEvent(${evt.id})">Edit</button>
+              <button class="btn-sm btn-edit" onclick="editEvent(${evt.id})">Edit Details</button>
               <button class="btn-sm btn-delete" onclick="deleteEvent(${evt.id})">Delete</button>
-              <button class="btn-sm btn-edit" onclick="openFormBuilder(${evt.id})">Edit Form</button>
-              <button class="btn-sm btn-edit" onclick="copyRegistrationLink(${evt.id})">Copy Link</button>
+              <button class="btn-sm btn-secondary" onclick="viewRegistrationsForEvent(${evt.id}, '${evt.title.replace(/'/g, "\\'")}')">View Attendees</button>
             </div>
           </div>
         `;
       });
     } else {
-      html = '<div class="empty-state"><p>No events yet</p></div>';
+      html = '<div class="empty-state"><p>No calendar events scheduled yet</p></div>';
     }
     document.getElementById('eventsList').innerHTML = html;
   } catch (error) {
@@ -347,7 +345,7 @@ async function loadEvents() {
 
 function openAddEvent() {
   currentEdit = null;
-  document.getElementById('modalTitle').textContent = 'New Event';
+  document.getElementById('modalTitle').textContent = 'New Calendar Event';
   document.getElementById('modalBody').innerHTML = `
     <div class="form-group">
       <label>Event Title <span style="color: red;">*</span></label>
@@ -383,26 +381,21 @@ function openAddEvent() {
     <hr style="border:0; border-top:1px solid rgba(0,0,0,0.1); margin:20px 0;">
 
     <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-      <input type="checkbox" id="evtFeatured" style="width:auto; height:auto;">
-      <label style="margin-bottom:0; cursor:pointer;" for="evtFeatured">⭐ Highlight as Featured Event</label>
-    </div>
-
-    <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
       <input type="checkbox" id="evtClosed" style="width:auto; height:auto;">
-      <label style="margin-bottom:0; cursor:pointer;" for="evtClosed">🚫 Close Registration (Stop accepting responses)</label>
+      <label style="margin-bottom:0; cursor:pointer;" for="evtClosed">🚫 Close Sign-ups (Stop accepting responses)</label>
     </div>
 
     <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
       <input type="checkbox" id="evtExternal" style="width:auto; height:auto;" onchange="document.getElementById('extUrlGroup').style.display = this.checked ? 'block' : 'none'">
-      <label style="margin-bottom:0; cursor:pointer;" for="evtExternal">🔗 Use External Registration Form (Google Forms/Typeform)</label>
+      <label style="margin-bottom:0; cursor:pointer;" for="evtExternal">🔗 Link out to External Site (Google Forms/Website)</label>
     </div>
 
     <div class="form-group" id="extUrlGroup" style="display:none; margin-left: 25px;">
-      <label>External Registration URL</label>
-      <input type="text" id="evtRedirectUrl" placeholder="https://forms.google.com/...">
+      <label>External URL</label>
+      <input type="text" id="evtRedirectUrl" placeholder="https://...">
     </div>
 
-    <button class="btn-save" style="margin-top:20px;" onclick="saveEvent()">Save Event</button>
+    <button class="btn-save" style="margin-top:20px;" onclick="saveEvent()">Save to Calendar</button>
   `;
   document.getElementById('modal').classList.add('active');
 }
@@ -411,7 +404,7 @@ async function editEvent(id) {
   try {
     const { data } = await client.from('events').select('*').eq('id', id).single();
     currentEdit = id;
-    document.getElementById('modalTitle').textContent = 'Edit Event';
+    document.getElementById('modalTitle').textContent = 'Edit Calendar Event';
     
     let parsedDate = "";
     if (data.event_date) {
@@ -456,22 +449,17 @@ async function editEvent(id) {
       <hr style="border:0; border-top:1px solid rgba(0,0,0,0.1); margin:20px 0;">
 
       <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
-        <input type="checkbox" id="evtFeatured" style="width:auto; height:auto;" ${data.is_featured ? 'checked' : ''}>
-        <label style="margin-bottom:0; cursor:pointer;" for="evtFeatured">⭐ Highlight as Featured Event</label>
-      </div>
-
-      <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
         <input type="checkbox" id="evtClosed" style="width:auto; height:auto;" ${data.registration_closed ? 'checked' : ''}>
-        <label style="margin-bottom:0; cursor:pointer;" for="evtClosed">🚫 Close Registration (Stop accepting responses)</label>
+        <label style="margin-bottom:0; cursor:pointer;" for="evtClosed">🚫 Close Sign-ups (Stop accepting responses)</label>
       </div>
 
       <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
         <input type="checkbox" id="evtExternal" style="width:auto; height:auto;" ${data.use_external_link ? 'checked' : ''} onchange="document.getElementById('extUrlGroup').style.display = this.checked ? 'block' : 'none'">
-        <label style="margin-bottom:0; cursor:pointer;" for="evtExternal">🔗 Use External Registration Form (Google Forms/Typeform)</label>
+        <label style="margin-bottom:0; cursor:pointer;" for="evtExternal">🔗 Link out to External Site</label>
       </div>
 
       <div class="form-group" id="extUrlGroup" style="display: ${data.use_external_link ? 'block' : 'none'}; margin-left: 25px;">
-        <label>External Registration URL</label>
+        <label>External URL</label>
         <input type="text" id="evtRedirectUrl" value="${data.redirect_url || ''}">
       </div>
 
@@ -494,10 +482,6 @@ async function saveEvent() {
   const use_external_link = document.getElementById('evtExternal').checked;
   const redirect_url = document.getElementById('evtRedirectUrl').value.trim();
 
-  // If editing an existing event, read its checkbox status. 
-  // If it's a NEW event, we will force it to true automatically below.
-  let is_featured = document.getElementById('evtFeatured').checked;
-
   if (!title || !description || !datePickerValue) {
     alert('Please fill in all required fields marked with a red asterisk (*)');
     return;
@@ -511,15 +495,10 @@ async function saveEvent() {
   const event_date = `${monthsArray[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.getFullYear()}`;
 
   try {
-    // AUTOMATIC FEATURED LOGIC FOR NEW EVENTS
+    let is_featured = false;
+    // Set latest event as the featured one automatically
     if (!currentEdit) {
-      // 1. Remove the featured status from all existing events first
-      await client
-        .from('events')
-        .update({ is_featured: false })
-        .eq('is_featured', true);
-        
-      // 2. Force this new event to be featured
+      await client.from('events').update({ is_featured: false }).eq('is_featured', true);
       is_featured = true;
     }
 
@@ -532,13 +511,163 @@ async function saveEvent() {
     }
     
     closeModal();
-    
-    if (typeof loadEvents === "function") {
-      loadEvents();
-    }
+    loadEvents();
   } catch (error) {
     alert('Error saving: ' + error.message);
   }
+}
+
+async function deleteEvent(id) {
+  if (confirm('Delete this event from the calendar?')) {
+    try {
+      await client.from('events').delete().eq('id', id);
+      loadEvents();
+    } catch (error) {
+      alert('Error deleting: ' + error.message);
+    }
+  }
+}
+
+
+// ==========================================
+// ===== NEW: EVENT REGISTRATIONS COLUMN =====
+// ==========================================
+
+async function loadAllRegistrations() {
+  try {
+    // Fetches submission data joined with the main event titles
+    const { data, error } = await client
+      .from('event_submissions')
+      .select(`
+        id,
+        created_at,
+        answers,
+        events ( title )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    let html = `
+      <div style="margin-bottom:20px; display:flex; gap:10px;">
+        <select id="regFilterEvent" onchange="filterRegistrations()" style="max-width:300px;">
+          <option value="">All Events</option>
+        </select>
+      </div>
+      <div class="table-responsive">
+        <table class="admin-table" style="width:100%; border-collapse:collapse; text-align:left;">
+          <thead>
+            <tr style="background:rgba(0,0,0,0.05); border-bottom:2px solid rgba(0,0,0,0.1);">
+              <th style="padding:12px;">Event</th>
+              <th style="padding:12px;">Submitted At</th>
+              <th style="padding:12px;">Details Summary</th>
+              <th style="padding:12px; text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="registrationsTableBody">
+    `;
+
+    const uniqueEvents = new Map();
+
+    if (data && data.length > 0) {
+      data.forEach(reg => {
+        const eventTitle = reg.events?.title || 'Unknown Event';
+        if(reg.events) uniqueEvents.set(eventTitle, eventTitle);
+
+        // Turn submission data answers into a clean visual string snippet
+        let answersSummary = '';
+        if (typeof reg.answers === 'object' && reg.answers !== null) {
+          answersSummary = Object.entries(reg.answers)
+            .map(([q, a]) => `<strong>${q}:</strong> ${a}`)
+            .join(' | ');
+        } else {
+          answersSummary = reg.answers || '';
+        }
+
+        const dateFormatted = new Date(reg.created_at).toLocaleString();
+
+        html += `
+          <tr class="registration-row" data-event="${eventTitle}" style="border-bottom:1px solid rgba(0,0,0,0.05);">
+            <td style="padding:12px;"><strong>${eventTitle}</strong></td>
+            <td style="padding:12px; font-size:13px; color:rgba(0,0,0,0.6);">${dateFormatted}</td>
+            <td style="padding:12px; font-size:13px;"><div style="max-width:400px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${answersSummary}</div></td>
+            <td style="padding:12px; text-align:right;">
+              <button class="btn-sm btn-edit btn-mini" onclick="viewFullRegistrationDetails(${JSON.stringify(reg).replace(/"/g, '&quot;')})">View Full</button>
+            </td>
+          </tr>
+        `;
+      });
+      html += `</tbody></table></div>`;
+    } else {
+      html = '<div class="empty-state"><p>No event registrations found yet.</p></div>';
+    }
+
+    document.getElementById('registrationForms').innerHTML = html;
+
+    // Populates the filter option list dynamically
+    const filterSelect = document.getElementById('regFilterEvent');
+    if (filterSelect) {
+      uniqueEvents.forEach(evt => {
+        filterSelect.innerHTML += `<option value="${evt}">${evt}</option>`;
+      });
+    }
+
+  } catch (error) {
+    console.error('Error loading registration logs:', error);
+    document.getElementById('registrationForms').innerHTML = `<div class="empty-state"><p>Error connecting to registrations database table.</p></div>`;
+  }
+}
+
+function filterRegistrations() {
+  const filterValue = document.getElementById('regFilterEvent').value;
+  const rows = document.querySelectorAll('.registration-row');
+  
+  rows.forEach(row => {
+    if (!filterValue || row.getAttribute('data-event') === filterValue) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+}
+
+function viewRegistrationsForEvent(eventId, eventTitle) {
+  // Jump to the registrations section column automatically
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('[data-section="registrationForms"]').classList.add('active');
+  document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('registrationForms').classList.add('active');
+  
+  loadAllRegistrations().then(() => {
+    const filterSelect = document.getElementById('regFilterEvent');
+    if (filterSelect) {
+      filterSelect.value = eventTitle;
+      filterRegistrations();
+    }
+  });
+}
+
+function viewFullRegistrationDetails(regObj) {
+  document.getElementById('modalTitle').textContent = `Registration Details`;
+  
+  let detailsHtml = `<p><strong>Event:</strong> ${regObj.events?.title || 'Unknown Event'}</p>`;
+  detailsHtml += `<p><strong>Date Submitted:</strong> ${new Date(regObj.created_at).toLocaleString()}</p><hr style="opacity:0.2; margin:15px 0;">`;
+
+  if (typeof regObj.answers === 'object' && regObj.answers !== null) {
+    Object.entries(regObj.answers).forEach(([question, answer]) => {
+      detailsHtml += `
+        <div style="margin-bottom:12px;">
+          <label style="font-weight:bold; color:rgba(0,0,0,0.5); font-size:12px; display:block; margin-bottom:2px;">${question}</label>
+          <div style="background:rgba(0,0,0,0.03); padding:8px 12px; border-radius:4px;">${answer}</div>
+        </div>
+      `;
+    });
+  } else {
+    detailsHtml += `<p>${regObj.answers}</p>`;
+  }
+
+  document.getElementById('modalBody').innerHTML = detailsHtml;
+  document.getElementById('modal').classList.add('active');
 }
 
 // ==========================================
