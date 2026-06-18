@@ -12,7 +12,6 @@
 
 </head>
 <body>
-<!-- GOOGLE FORM VIGNETTE POPUP -->
 <div id="googleFormPopup" class="popup-overlay">
   <div class="popup-card">
     <button class="popup-close" onclick="closeGoogleFormPopup()">✕</button>
@@ -42,13 +41,13 @@
   </div>
 </div>
 
-<!-- NAV -->
 <nav>
   <div class="nav-logo">STUCO <span>'26–'27</span></div>
   <ul class="nav-links">
     <li><a href="#mission">Mission</a></li>
     <li><a href="#board">Board</a></li>
     <li><a href="#events">Events</a></li>
+    <li><a href="#registrations">Registrations</a></li>
     <li><a href="#initiatives">Initiatives</a></li>
     <li><a href="#announcements">News</a></li>
     <li><a href="#survey">Survey</a></li>
@@ -63,13 +62,13 @@
   <a href="#mission" onclick="toggleMenu()">Mission</a>
   <a href="#board" onclick="toggleMenu()">Board</a>
   <a href="#events" onclick="toggleMenu()">Events</a>
+  <a href="#registrations" onclick="toggleMenu()">Registrations</a>
   <a href="#initiatives" onclick="toggleMenu()">Initiatives</a>
   <a href="#announcements" onclick="toggleMenu()">News</a>
   <a href="#survey" onclick="toggleMenu()">Survey</a>
   <a href="#contact" onclick="toggleMenu()">Contact Us</a>
 </div>
 
-<!-- HERO -->
 <section id="hero">
   <div class="hero-grid-bg"></div>
   <div class="hero-glow"></div>
@@ -109,7 +108,6 @@
   </div>
 </section>
 
-<!-- MISSION -->
 <section id="mission">
   <div class="section-tag">Who We Are</div>
   <h2 class="section-title">Our Mission</h2>
@@ -123,7 +121,7 @@
       <div class="pillar">
         <div class="pillar-num">01</div>
         <div class="pillar-icon"></div>
-        <h3>Advocacy</h3>
+        <h3>text</h3>
         <p>Your voice reaches administration through us. We fight for the changes you want.</p>
       </div>
       <div class="pillar">
@@ -148,7 +146,6 @@
   </div>
 </section>
 
-<!-- BOARD -->
 <section id="board">
   <div class="section-tag" style="color:var(--gold)">Meet the Team</div>
   <h2 class="section-title light">Executive Board</h2>
@@ -332,7 +329,6 @@
   </div>
 </section>
 
-<!-- EVENTS -->
 <section id="events">
   <div class="section-tag">Calendar</div>
   <h2 class="section-title">Upcoming Events</h2>
@@ -364,7 +360,45 @@
   </div>
 </section>
 
-<!-- INITIATIVES -->
+<section id="registrations">
+  <div class="section-tag">Operational Control</div>
+  <h2 class="section-title">Event Registrations</h2>
+  
+  <div class="registrations-wrapper reveal">
+    <div class="reg-control-header">
+      <div>
+        <label style="font-size: 14px; color: rgba(255,255,255,0.7); margin-right: 10px;">Select Target Log Array:</label>
+        <select id="regFilterEvent" class="reg-filter-select" onchange="filterRegistrations()">
+          <option value="">Show All Registered Events</option>
+        </select>
+      </div>
+      <button class="btn-primary" style="font-size: 13px; padding: 10px 20px;" onclick="openManualRegistrationModal()">
+        + Add New Attendee Manually
+      </button>
+    </div>
+
+    <div class="table-responsive">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Target Event</th>
+            <th>Submission Date</th>
+            <th>Summary of Inputs</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="registrationsTableBody">
+          <tr>
+            <td colspan="4" style="text-align: center; color: rgba(255,255,255,0.4); padding: 30px;">
+              Awaiting payload sync validation streams...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
 <section id="initiatives">
   <div class="section-tag">What We're Building</div>
   <h2 class="section-title">Work in Motion</h2>
@@ -382,7 +416,6 @@
   </div>
 </section>
 
-<!-- ANNOUNCEMENTS -->
 <section id="announcements">
   <div class="section-tag" style="color:var(--gold)">Stay Updated</div>
   <h2 class="section-title light">News & Announcements</h2>
@@ -419,7 +452,6 @@
   </div>
 </section>
 
-<!-- SURVEY -->
 <section id="survey">
   <div class="section-tag">Feedback</div>
   <h2 class="section-title">Quick Survey</h2>
@@ -430,10 +462,10 @@
       <p><strong>✓ Completely Anonymous</strong> — We don't collect names or identifying information.</p>
       <p><strong>✓ Takes 2-3 minutes</strong> — Quick questions, quick answers.</p>
       <a href="survey.html" class="btn-primary" style="display: inline-flex; margin-top: 24px;">Take the Survey →</a>
+    </div>
   </div>
 </section>
 
-<!-- CONTACT -->
 <section id="contact">
   <div class="section-tag">Get In Touch</div>
   <h2 class="section-title">Contact Us</h2>
@@ -471,7 +503,14 @@
   </div>
 </section>
 
-<!-- FOOTER -->
+<div id="modal" class="popup-overlay" style="z-index: 99999;">
+  <div class="popup-card" style="text-align: left; background: #0a192f; border: 1px solid rgba(255,255,255,0.1); max-width: 550px; color: #ffffff;">
+    <button class="popup-close" onclick="closeModal()">✕</button>
+    <h2 id="modalTitle" style="font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; color: #f5c75d; margin-bottom: 20px;">Form</h2>
+    <div id="modalBody" style="max-height: 400px; overflow-y: auto; padding-right: 10px;"></div>
+  </div>
+</div>
+
 <footer>
   <div class="footer-top">
     <div class="footer-brand">
@@ -484,6 +523,7 @@
         <li><a href="#mission">Our Mission</a></li>
         <li><a href="#board">Executive Board</a></li>
         <li><a href="#events">Events Calendar</a></li>
+        <li><a href="#registrations">Event Registrations</a></li>
         <li><a href="#initiatives">Initiatives</a></li>
         <li><a href="#announcements">Announcements</a></li>
       </ul>
@@ -510,6 +550,17 @@
 
 <script src="config.js"></script>
 <script src="script.js"></script>
+<script>
+  // Automatic data hook trigger on layout frame load
+  window.addEventListener('DOMContentLoaded', () => {
+    if (typeof loadAllRegistrations === 'function') {
+      loadAllRegistrations();
+    }
+  });
 
+  function closeModal() {
+    document.getElementById('modal').classList.remove('active');
+  }
+</script>
 </body>
 </html>
