@@ -1022,139 +1022,176 @@ function populateOptions(optionsString) {
 
   // ===== INITIATIVES =====
   async function loadInitiatives() {
-    try {
-      const { data, error } = await client
-        .from('initiatives')
-        .select('*')
-        .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await client
+      .from('initiatives')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-      if (error) throw error;
+    if (error) throw error;
 
-      let html = '';
-      if (data && data.length > 0) {
-        data.forEach(init => {
-          html += `
-            <div class="card">
-              <div class="card-content">
-                <h3>${init.title}</h3>
-                <p>${init.description.substring(0, 80)}...</p>
-                <small>Progress: ${init.progress_percentage}%</small>
-              </div>
-              <div class="card-actions">
-                <button class="btn-sm btn-edit" onclick="editInitiative(${init.id})">Edit</button>
-                <button class="btn-sm btn-delete" onclick="deleteInitiative(${init.id})">Delete</button>
-              </div>
+    let html = '';
+    if (data && data.length > 0) {
+      data.forEach(init => {
+        const shortDesc = init.description ? `${init.description.substring(0, 80)}...` : 'No description provided.';
+        const emojiDisplay = init.emoji ? `${init.emoji} ` : '';
+
+        html += `
+          <div class="card">
+            <div class="card-content">
+              <h3>${emojiDisplay}${init.title}</h3>
+              <p>${shortDesc}</p>
+              <small>Progress: ${init.progress_percentage || 0}%</small>
+              ${init.theme ? `<div style="font-size: 11px; opacity: 0.6; margin-top: 5px;">Theme: ${init.theme}</div>` : ''}
             </div>
-          `;
-        });
-      } else {
-        html = '<div class="empty-state"><p>No initiatives yet</p></div>';
-      }
-      document.getElementById('initiativesList').innerHTML = html;
-    } catch (error) {
-      console.error('Error loading initiatives:', error);
+            <div class="card-actions">
+              <button class="btn-sm btn-edit" onclick="editInitiative(${init.id})">Edit</button>
+              <button class="btn-sm btn-delete" onclick="deleteInitiative(${init.id})">Delete</button>
+            </div>
+          </div>
+        `;
+      });
+    } else {
+      html = '<div class="empty-state"><p>No initiatives yet</p></div>';
     }
+    document.getElementById('initiativesList').innerHTML = html;
+  } catch (error) {
+    console.error('Error loading initiatives:', error);
   }
+}
 
-  function openAddInitiative() {
-    currentEdit = null;
-    document.getElementById('modalTitle').textContent = 'New Initiative';
+function openAddInitiative() {
+  currentEdit = null;
+  document.getElementById('modalTitle').textContent = 'New Initiative';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="form-group">
+      <label>Title <span style="color: red;">*</span></label>
+      <input type="text" id="initTitle" placeholder="Initiative title">
+    </div>
+    <div class="form-group">
+      <label>Emoji (Optional)</label>
+      <input type="text" id="initEmoji" placeholder="e.g., 🚀">
+    </div>
+    <div class="form-group">
+      <label>Description (Optional)</label>
+      <textarea id="initDescription" placeholder="Initiative description"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Progress % (Optional)</label>
+      <input type="number" id="initProgress" placeholder="0" min="0" max="100">
+    </div>
+    <div class="form-group">
+      <label>Theme (Optional, e.g., t1-t6)</label>
+      <input type="text" id="initTheme" placeholder="t1">
+    </div>
+    <button class="btn-save" onclick="saveInitiative()">Save Initiative</button>
+  `;
+  document.getElementById('modal').classList.add('active');
+}
+
+async function editInitiative(id) {
+  try {
+    const { data } = await client.from('initiatives').select('*').eq('id', id).single();
+    currentEdit = id;
+    document.getElementById('modalTitle').textContent = 'Edit Initiative';
     document.getElementById('modalBody').innerHTML = `
       <div class="form-group">
-        <label>Title</label>
-        <input type="text" id="initTitle" placeholder="Initiative title">
+        <label>Title <span style="color: red;">*</span></label>
+        <input type="text" id="initTitle" value="${data.title || ''}">
       </div>
       <div class="form-group">
-        <label>Emoji</label>
-        <input type="text" id="initEmoji" placeholder="Icon">
+        <label>Emoji (Optional)</label>
+        <input type="text" id="initEmoji" value="${data.emoji || ''}">
       </div>
       <div class="form-group">
-        <label>Description</label>
-        <textarea id="initDescription" placeholder="Initiative description"></textarea>
+        <label>Description (Optional)</label>
+        <textarea id="initDescription">${data.description || ''}</textarea>
       </div>
       <div class="form-group">
-        <label>Progress %</label>
-        <input type="number" id="initProgress" placeholder="75" min="0" max="100">
+        <label>Progress % (Optional)</label>
+        <input type="number" id="initProgress" value="${data.progress_percentage ?? 0}" min="0" max="100">
       </div>
       <div class="form-group">
-        <label>Theme (t1-t6)</label>
-        <input type="text" id="initTheme" placeholder="t1">
+        <label>Theme (Optional)</label>
+        <input type="text" id="initTheme" value="${data.theme || ''}">
       </div>
-      <button class="btn-save" onclick="saveInitiative()">Save Initiative</button>
+      <button class="btn-save" onclick="saveInitiative()">Update Initiative</button>
     `;
     document.getElementById('modal').classList.add('active');
+  } catch (error) {
+    alert('Error loading initiative: ' + error.message);
+  }
+}
+
+async function saveInitiative() {
+  const title = document.getElementById('initTitle').value.trim();
+  const description = document.getElementById('initDescription').value.trim();
+  const emoji = document.getElementById('initEmoji').value.trim();
+  const progressInput = document.getElementById('initProgress').value;
+  const progress_percentage = progressInput !== "" ? parseInt(progressInput) : 0;
+  const theme = document.getElementById('initTheme').value.trim();
+
+  // ONLY check if the title field is missing
+  if (!title) {
+    alert('Please fill in the required Title field marked with a red asterisk (*)');
+    return;
   }
 
-  async function editInitiative(id) {
-    try {
-      const { data } = await client.from('initiatives').select('*').eq('id', id).single();
-      currentEdit = id;
-      document.getElementById('modalTitle').textContent = 'Edit Initiative';
-      document.getElementById('modalBody').innerHTML = `
-        <div class="form-group">
-          <label>Title</label>
-          <input type="text" id="initTitle" value="${data.title}">
-        </div>
-        <div class="form-group">
-          <label>Emoji</label>
-          <input type="text" id="initEmoji" value="${data.emoji}">
-        </div>
-        <div class="form-group">
-          <label>Description</label>
-          <textarea id="initDescription">${data.description}</textarea>
-        </div>
-        <div class="form-group">
-          <label>Progress %</label>
-          <input type="number" id="initProgress" value="${data.progress_percentage}" min="0" max="100">
-        </div>
-        <div class="form-group">
-          <label>Theme</label>
-          <input type="text" id="initTheme" value="${data.theme}">
-        </div>
-        <button class="btn-save" onclick="saveInitiative()">Update Initiative</button>
-      `;
-      document.getElementById('modal').classList.add('active');
-    } catch (error) {
-      alert('Error loading initiative: ' + error.message);
+  try {
+    const dataPayload = { 
+      title, 
+      description: description || null, 
+      emoji: emoji || null, 
+      progress_percentage, 
+      theme: theme || null 
+    };
+
+    let error;
+    if (currentEdit) {
+      const res = await client.from('initiatives').update(dataPayload).eq('id', currentEdit);
+      error = res.error;
+    } else {
+      const res = await client.from('initiatives').insert([dataPayload]);
+      error = res.error;
     }
+    
+    if (error) throw error;
+
+    closeModal();
+    loadInitiatives();
+  } catch (error) {
+    alert('Error saving: ' + error.message);
   }
+}
 
-  async function saveInitiative() {
-    const title = document.getElementById('initTitle').value;
-    const description = document.getElementById('initDescription').value;
-    const emoji = document.getElementById('initEmoji').value;
-    const progress_percentage = parseInt(document.getElementById('initProgress').value) || 0;
-    const theme = document.getElementById('initTheme').value;
-
-    if (!title || !description) {
-      alert('Please fill all fields');
-      return;
-    }
-
+async function deleteInitiative(id) {
+  if (confirm('Delete this initiative?')) {
     try {
-      const data = { title, description, emoji, progress_percentage, theme };
-      if (currentEdit) {
-        await client.from('initiatives').update(data).eq('id', currentEdit);
+      const { error } = await client.from('initiatives').delete().eq('id', id);
+      if (error) throw error;
+
+      // Optimistic UI Removal: animate and pop the card out from display panel immediately
+      const activeBtn = document.activeElement;
+      const targetCard = activeBtn ? activeBtn.closest('.card') : null;
+      if (targetCard) {
+        targetCard.style.transition = 'all 0.25s ease';
+        targetCard.style.opacity = '0';
+        targetCard.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+          targetCard.remove();
+          const cardsLeft = document.querySelectorAll('#initiativesList .card');
+          if (cardsLeft.length === 0) {
+            document.getElementById('initiativesList').innerHTML = '<div class="empty-state"><p>No initiatives yet</p></div>';
+          }
+        }, 250);
       } else {
-        await client.from('initiatives').insert([data]);
-      }
-      closeModal();
-      loadInitiatives();
-    } catch (error) {
-      alert('Error saving: ' + error.message);
-    }
-  }
-
-  async function deleteInitiative(id) {
-    if (confirm('Delete this initiative?')) {
-      try {
-        await client.from('initiatives').delete().eq('id', id);
         loadInitiatives();
-      } catch (error) {
-        alert('Error deleting: ' + error.message);
       }
+    } catch (error) {
+      alert('Error deleting: ' + error.message);
     }
   }
+}
 
   // ===== REGISTRATIONS =====
   async function loadRegistrations() {
@@ -1402,6 +1439,7 @@ function populateOptions(optionsString) {
       alert('Error deleting: ' + error.message);
     }
   }
+}
 
   // ===== SURVEY =====
   async function copyRegistrationLink(eventId) {
