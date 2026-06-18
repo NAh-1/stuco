@@ -381,6 +381,11 @@ function openAddEvent() {
     <hr style="border:0; border-top:1px solid rgba(0,0,0,0.1); margin:20px 0;">
 
     <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+      <input type="checkbox" id="evtFeatured" style="width:auto; height:auto;">
+      <label style="margin-bottom:0; cursor:pointer;" for="evtFeatured">⭐ Highlight as Featured Event on Homepage</label>
+    </div>
+
+    <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
       <input type="checkbox" id="evtClosed" style="width:auto; height:auto;">
       <label style="margin-bottom:0; cursor:pointer;" for="evtClosed">🚫 Close Sign-ups (Stop accepting responses)</label>
     </div>
@@ -447,6 +452,11 @@ async function editEvent(id) {
       </div>
 
       <hr style="border:0; border-top:1px solid rgba(0,0,0,0.1); margin:20px 0;">
+
+      <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+        <input type="checkbox" id="evtFeatured" style="width:auto; height:auto;" ${data.is_featured ? 'checked' : ''}>
+        <label style="margin-bottom:0; cursor:pointer;" for="evtFeatured">⭐ Highlight as Featured Event on Homepage</label>
+      </div>
 
       <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
         <input type="checkbox" id="evtClosed" style="width:auto; height:auto;" ${data.registration_closed ? 'checked' : ''}>
