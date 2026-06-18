@@ -411,11 +411,15 @@ async function editEvent(id) {
     currentEdit = id;
     document.getElementById('modalTitle').textContent = 'Edit Calendar Event';
     
+    // SAFE PARSING: Convert custom string (e.g., "January 15, 2026") to HTML Date Format (YYYY-MM-DD)
     let parsedDate = "";
     if (data.event_date) {
       const d = new Date(data.event_date);
       if (!isNaN(d.getTime())) {
-        parsedDate = d.toISOString().split('T')[0];
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        parsedDate = `${year}-${month}-${day}`;
       }
     }
 
@@ -490,7 +494,7 @@ async function saveEvent() {
   const location = document.getElementById('evtLocation').value.trim() || '';
   
   // Grab checkbox values from modal UI layout properties
-  const is_featured = document.getElementById('evtFeatured').checked; // 🌟 FIXED: Now reading your checkbox value!
+  const is_featured = document.getElementById('evtFeatured').checked; 
   const registration_closed = document.getElementById('evtClosed').checked;
   const use_external_link = document.getElementById('evtExternal').checked;
   const redirect_url = document.getElementById('evtRedirectUrl').value.trim();
@@ -508,9 +512,13 @@ async function saveEvent() {
   const event_date = `${monthsArray[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.getFullYear()}`;
 
   try {
-    // 🌟 FIXED: If this event is being saved as featured, turn off featured status for all other events first
+    // 🌟 FIXED: Demote OTHER events from featured, without resetting the current one being edited
     if (is_featured) {
-      await client.from('events').update({ is_featured: false }).eq('is_featured', true);
+      let query = client.from('events').update({ is_featured: false }).eq('is_featured', true);
+      if (currentEdit) {
+        query = query.neq('id', currentEdit); // Don't turn off the one we're updating!
+      }
+      await query;
     }
 
     const eventData = { 
@@ -522,20 +530,33 @@ async function saveEvent() {
       location, 
       month, 
       day, 
-      is_featured, // 🌟 FIXED: Stores the actual checked state true/false
-      registration_closed, 
-      use_external_link, 
+      is_featured: !!is_featured, // 🌟 FIXED: Strictly forces explicit true/false primitive
+      registration_closed: !!registration_closed, 
+      use_external_link: !!use_external_link, 
       redirect_url 
     };
     
+    let error;
     if (currentEdit) {
-      await client.from('events').update(eventData).eq('id', currentEdit);
+      const res = await client.from('events').update(eventData).eq('id', currentEdit);
+      error = res.error;
     } else {
-      await client.from('events').insert([eventData]);
+      const res = await client.from('events').insert([eventData]);
+      error = res.error;
     }
     
+    if (error) throw error;
+    
     closeModal();
-    loadEvents();
+    
+    // Refresh your lists safely depending on what view functions are available inside your dashboard file
+    if (typeof loadAdminEvents === 'function') {
+      loadAdminEvents();
+    } else if (typeof loadEvents === 'function') {
+      loadEvents();
+    } else {
+      location.reload();
+    }
   } catch (error) {
     alert('Error saving: ' + error.message);
   }
