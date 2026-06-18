@@ -850,3 +850,95 @@
     opacity: 1;
   }
 }
+/* ==========================================================================
+   STUCO REGISTRATIONS PANEL STYLES
+   ========================================================================== */
+
+/* The card wrapper holding the data board */
+.registrations-wrapper {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 30px;
+  margin-top: 20px;
+}
+
+/* Aligning the filter menu and action controls at the top */
+.reg-control-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 25px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 15px;
+}
+
+/* The administrative filtering selection dropdown menu */
+.reg-filter-select {
+  background: #0a192f;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 10px 16px;
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* Mobile responsive horizontal scroll engine for larger data sets */
+.table-responsive {
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Main presentation layout structural spreadsheet matrix */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  color: #ffffff;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* Header structural column controls */
+.admin-table th {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 14px;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Individual data entry coordinate cell boxes */
+.admin-table td {
+  padding: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 14px;
+}
+
+/* Hover tracker tracking highlights */
+.admin-table tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Minimal detailed modal workbench selector link configuration */
+.btn-mini-view {
+  background: #f5c75d; /* Falling back to your theme gold configuration */
+  color: #0a192f;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-mini-view:hover {
+  opacity: 0.9;
+}
